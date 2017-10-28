@@ -1,0 +1,16 @@
+package com.thinkgem.jeesite.modules.asmt.dao;
+
+import org.springframework.stereotype.Repository;
+
+import com.thinkgem.jeesite.common.persistence.BaseDao;
+import com.thinkgem.jeesite.modules.asmt.entity.RankDetail;
+
+/**
+ * @author JianHui
+ * @date 2017年09月16日--下午03:53:07
+ */
+
+@Repository
+public class RankDetailDao extends BaseDao<RankDetail> {
+
+}

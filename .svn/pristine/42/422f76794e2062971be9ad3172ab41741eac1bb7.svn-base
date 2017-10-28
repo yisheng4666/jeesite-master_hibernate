@@ -1,0 +1,127 @@
+package com.thinkgem.jeesite.modules.asmt.entity;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.thinkgem.jeesite.modules.sys.entity.Office;
+import com.thinkgem.jeesite.modules.sys.entity.User;
+
+/**
+ * 被考评组和被考评单位Tree(虚拟表)
+ * 
+ * @author JianHui
+ * @date 2017年9月6日--上午10:26:04
+ *
+ */
+
+public class AssementUserTree {
+
+	private String id; // ID
+	private Assement assement; // 考评ID
+	private Office office; // 被考评组ID
+	private User user; // 用户ID
+	private String userName; // 用户名称
+	private String organizationNo; // 排序
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public Assement getAssement() {
+		return assement;
+	}
+
+	public void setAssement(Assement assement) {
+		this.assement = assement;
+	}
+
+	public Office getOffice() {
+		return office;
+	}
+
+	public void setOffice(Office office) {
+		this.office = office;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public String getOrganizationNo() {
+		return organizationNo;
+	}
+
+	public void setOrganizationNo(String organizationNo) {
+		this.organizationNo = organizationNo;
+	}
+
+	public static void sortList(List<AssementUserTree> list, List<AssementUser> sourcelist) {
+		list = getOfficeConvertAssementUserTree(sourcelist);
+		for (int i = 0; i < sourcelist.size(); i++) {
+			AssementUser au = sourcelist.get(i);
+			AssementUserTree aut = copyProperties(au);
+			list.add(aut);
+		}
+	}
+
+	// 将AssementUser 转换成 AssementUserTree
+	public static AssementUserTree copyProperties(AssementUser au) {
+		AssementUserTree aut = new AssementUserTree();
+		aut.setId(au.getId());
+		aut.setAssement(au.getAssement());
+		aut.setOffice(au.getOffice());
+		aut.setUser(au.getUser());
+		aut.setUserName(au.getUserName());
+		aut.setOrganizationNo(au.getOrganizationNo());
+		return aut;
+	}
+
+	// 获取被考评组，并且将被考评组转换成AssementUserTree
+	public static List<AssementUserTree> getOfficeConvertAssementUserTree(List<AssementUser> sourcelist) {
+		List<AssementUserTree> list = new ArrayList<AssementUserTree>();
+		int no = 100;
+		for (int i = 0; i < sourcelist.size(); i++) {
+			AssementUser au = sourcelist.get(i);
+			if (au.getOffice() != null) {
+				Office office = au.getOffice();
+				boolean bool = isExist(list, office.getId());
+				if (!bool) {
+					AssementUserTree aut = new AssementUserTree();
+					aut.setId(office.getId());
+					aut.setAssement(au.getAssement());
+					aut.setUserName(office.getName());
+					aut.setOrganizationNo(no + "");
+					no += 100;
+					list.add(aut);
+				}
+			}
+		}
+		return list;
+	}
+
+	// 判断组是否存在
+	public static boolean isExist(List<AssementUserTree> list, String id) {
+		for (AssementUserTree aut : list) {
+			if (aut.getId().equals(id)) {
+				return true;
+			}
+		}
+		return false;
+	}
+}

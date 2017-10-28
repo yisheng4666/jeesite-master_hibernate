@@ -1,0 +1,15 @@
+package com.thinkgem.jeesite.modules.asmt.dao;
+
+import org.springframework.stereotype.Repository;
+
+import com.thinkgem.jeesite.common.persistence.BaseDao;
+import com.thinkgem.jeesite.modules.asmt.entity.RuleUser;
+
+/**
+ * 被考评用户规则DAO接口
+ * @author Yyz
+ * @version 2017-10-25
+ */
+@Repository
+public class AssementUserRuleDao extends BaseDao<RuleUser> {
+}

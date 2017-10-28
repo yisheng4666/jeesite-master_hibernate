@@ -1,0 +1,68 @@
+<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ include file="/WEB-INF/views/include/taglib.jsp"%>
+<html>
+<head>
+	<title>菜单管理</title>
+	<meta name="decorator" content="default"/>
+	<style type="text/css">
+		.table-striped tbody tr.selected td{
+		  background-color: #54b4eb;
+		}
+	</style>
+	<script type="text/javascript">
+		var trId;
+		$(document).ready(function() {var officeId = '${officeId}';
+			if (officeId != "" && officeId != undefined) {
+				$("#"+officeId).click();  
+			} else {
+				window.parent.centerFrame.location.href='${ctx}/asmt/assementUser/groupMembersList';
+			}
+		});
+		function clickTr(id) {
+			if (trId!=undefined) {
+				$("#"+trId).removeClass("selected");
+			}
+			$("#"+id).addClass("selected");
+			trId = id;
+			window.parent.centerFrame.location.href='${ctx}/asmt/assementUser/groupMembersList?officeId='+id;
+		}
+		function checkGroupingValidity() { 
+			loading('正在检查分组有效性，请稍等...');
+		    $("#listForm").attr("action", "${ctx}/asmt/assementUser/checkGroupingValidity?officeId="+trId);
+		    $("#listForm").submit();
+    	}
+	</script>
+</head>
+<body>
+	<tags:message content="${message}"/>
+	<div class="breadcrumb">
+		<label>考评组</label>
+	</div>
+	<form:form id="searchForm" modelAttribute="assementUser" action="${ctx}/asmt/assementUser/groupingList" method="post" class="breadcrumb form-search">
+		<label>组名称：</label><form:input path="office.name" htmlEscape="false" maxlength="50" class="input-small"/>
+		&nbsp;<input id="btnSubmit" class="btn btn-primary" type="submit" value="查询"/>
+	</form:form>
+	<form id="listForm" method="post" target="mainFrame">
+		<table id="treeTable" class="table table-striped table-bordered table-condensed">
+			<tr>
+				<th style="text-align:center;">组名称</th>
+				<th style="text-align:center; width: 70px;">成员单位数</th>
+			</tr>
+			<c:forEach items="${list }" var="o">
+				<tr id="${o.id }" onclick="clickTr('${o.id }');" >
+					<td style="text-align:center;">
+						<input hidden id="${o.id }" value="${o.id }" />
+						${o.name }
+					</td>
+					<td style="text-align:center;">${o.num }</td>
+				</tr>
+			</c:forEach>
+		</table>
+		<shiro:hasPermission name="asmt:assementUser:edit">
+			<div class="breadcrumb form-actions pagination-left">
+				<input id="btnSubmit" class="btn btn-primary" type="button" value="检查分组有效性" onclick="checkGroupingValidity();"/>
+			</div>
+		</shiro:hasPermission>
+	</form>
+</body>
+</html>

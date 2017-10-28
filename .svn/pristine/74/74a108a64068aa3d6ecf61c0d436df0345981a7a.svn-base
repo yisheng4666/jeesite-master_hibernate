@@ -1,0 +1,31 @@
+package com.thinkgem.jeesite.modules.sys.web;
+
+import org.junit.*;
+import org.springframework.test.web.servlet.MvcResult;
+
+import org.springframework.test.web.servlet.ResultActions;
+
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
+import com.thinkgem.jeesite.common.test.BaseControllerTest;
+
+public class OfficeControllerTest extends BaseControllerTest {
+	@Test
+	public void listTest() throws Exception {
+
+		// 准备参数
+		// String postJson = "{\"mac\":\"h\",\"dtClient\":\"2015-06-03 13:20:10\"}";
+		// 发送请求
+		// ResultActions resultActions =
+		// this.mockMvc.perform(MockMvcRequestBuilders.post("/a/sys/office/list").accept(MediaType.APPLICATION_JSON).param("criJson",postJson));
+		
+		ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders.get("/a/sys/office").session(mockSession));
+		MvcResult mvcResult = resultActions.andReturn();
+
+		String result = mvcResult.getResponse().getContentAsString();
+
+		System.out.println("=====客户端获得反馈数据:" + result);
+
+	}
+
+}

@@ -1,0 +1,34 @@
+package com.thinkgem.jeesite.modules.asmt.dao;
+
+import java.util.List;
+
+import org.springframework.stereotype.Repository;
+
+import com.thinkgem.jeesite.common.persistence.BaseDao;
+import com.thinkgem.jeesite.common.persistence.Parameter;
+import com.thinkgem.jeesite.modules.asmt.entity.AssementUser;
+
+/**
+ * 被考评用户Dao接口
+ * 
+ * @author JianHui
+ * @date 2017年9月6日--上午10:42:11
+ *
+ */
+
+@Repository
+public class AssementUserDao extends BaseDao<AssementUser> {
+
+	/**
+	 * 根据考评ID查询被考评单位
+	 * 
+	 * @param id
+	 *            考评ID
+	 * @return
+	 * @author JianHui
+	 */
+	public List<AssementUser> findByAsseent(String id) {
+		return find("from AssementUser u where u.assement.id=:p1 and delFlag=:p2",
+				new Parameter(id, AssementUser.DEL_FLAG_NORMAL));
+	}
+}

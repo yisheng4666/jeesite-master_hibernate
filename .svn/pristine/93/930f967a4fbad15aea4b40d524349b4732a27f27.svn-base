@@ -1,0 +1,28 @@
+package com.thinkgem.jeesite.modules.asmt.service;
+
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
+
+import com.thinkgem.jeesite.common.test.BaseServiceJunit4Test;
+
+/**
+ * 
+ * @author JianHui
+ * @date 2017年9月9日--下午3:24:54
+ *
+ */
+
+public class AssementUserserviceTest extends BaseServiceJunit4Test {
+
+	@Test
+	public void testGet() {
+		fail("Not yet implemented");
+	}
+
+	@Test
+	public void testFindTree() {
+		fail("Not yet implemented");
+	}
+
+}

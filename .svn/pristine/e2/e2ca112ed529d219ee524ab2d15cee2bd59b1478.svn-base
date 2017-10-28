@@ -1,0 +1,146 @@
+package com.thinkgem.jeesite.modules.asmt.dao;
+
+import java.util.List;
+
+import org.springframework.stereotype.Repository;
+
+import com.thinkgem.jeesite.common.persistence.BaseDao;
+import com.thinkgem.jeesite.common.persistence.Parameter;
+import com.thinkgem.jeesite.modules.asmt.entity.Assement;
+import com.thinkgem.jeesite.modules.asmt.entity.AssementUser;
+import com.thinkgem.jeesite.modules.sys.entity.Office;
+
+/**
+ * 被考评用户Dao接口
+ * 
+ * @author JianHui
+ * @date 2017年9月6日--上午10:42:11
+ *
+ */
+
+@Repository
+public class AssementUserDao extends BaseDao<AssementUser> {
+
+	/**
+	 * 根据考评ID查询被考评单位
+	 * 
+	 * @param id
+	 *            考评ID
+	 * @return
+	 * @author JianHui
+	 */
+	public List<AssementUser> findByAssement(String id) {
+		return find("from AssementUser u where u.assement.id=:p1 and delFlag=:p2",
+				new Parameter(id, AssementUser.DEL_FLAG_NORMAL));
+	}
+
+	/**
+	 * 获得组成员数量
+	 * 
+	 * @author JianHui
+	 * @param office
+	 *            组
+	 * @return
+	 */
+	public Integer getGroupMembersNum(Office office) {
+		Integer result = Integer.parseInt(
+				uniqueResult("select count(*) from AssementUser u where u.office.id=:p1", new Parameter(office.getId()))
+						.toString());
+		return result;
+	}
+
+	/**
+	 * 查询组内成员
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            当前考评
+	 * @param officeId
+	 *            组ID
+	 * @return
+	 */
+	public List<AssementUser> findByGroupMembers(Assement assement, String officeId) {
+		return find(
+				"from AssementUser u where u.assement.id=:p1 and delFlag=:p2 and u.office.id=:p3 order by u.organizationNo asc",
+				new Parameter(assement.getId(), AssementUser.DEL_FLAG_NORMAL, officeId));
+	}
+
+	/**
+	 * 根据单位名称查询组内成员
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            当前考评
+	 * @param officeId
+	 *            组ID
+	 * @param userName
+	 *            单位名称
+	 * @return
+	 */
+	public List<AssementUser> findByGroupMembers(Assement assement, String officeId, String userName) {
+		return find(
+				"from AssementUser u where u.assement.id = :p1 and delFlag = :p2 and u.office.id = :p3 and u.userName like :p4 order by u.organizationNo asc",
+				new Parameter(assement.getId(), AssementUser.DEL_FLAG_NORMAL, officeId, "%" + userName + "%"));
+	}
+
+	/**
+	 * 查询当前考评内没有分组的单位用户
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            当前考评
+	 * @return
+	 */
+	public List<AssementUser> findByNotGroupMembers(Assement assement) {
+		return find(
+				"from AssementUser u where u.assement.id = :p1 and delFlag = :p2 and u.office.id is null order by u.organizationNo asc",
+				new Parameter(assement.getId(), AssementUser.DEL_FLAG_NORMAL));
+	}
+
+	/**
+	 * 根据单位名称查询当前考评内没有分组的单位用户
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            当前考评
+	 * @param userName
+	 *            单位名称
+	 * @return
+	 */
+	public List<AssementUser> findByNotGroupMembers(Assement assement, String userName) {
+		return find(
+				"from AssementUser u where u.assement.id = :p1 and delFlag = :p2 and u.userName like:p3 and u.office.id is null order by u.organizationNo asc",
+				new Parameter(assement.getId(), AssementUser.DEL_FLAG_NORMAL, "%" + userName + "%"));
+	}
+
+	/**
+	 * 根据考评和考评单位ID查询考评单位
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            考评
+	 * @param id
+	 *            考评单位id
+	 * @return
+	 */
+	public AssementUser findByAssementAndId(Assement assement, String id) {
+		return getByHql("from AssementUser u where u.assement.id = :p1 and u.id = :p2 and delFlag = :p3",
+				new Parameter(assement.getId(), id, AssementUser.DEL_FLAG_NORMAL));
+	}
+
+	/**
+	 * 查询考评组内的组长单位
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            考评
+	 * @param office
+	 *            考评组
+	 * @return
+	 */
+	public List<AssementUser> findGroupLeaderByAssement(Assement assement, Office office) {
+		return find(
+				"from AssementUser u where u.assement.id = :p1 and u.office.id = :p2 and delFlag = :p3 and isGroupLeader=1",
+				new Parameter(assement.getId(), office.getId(), AssementUser.DEL_FLAG_NORMAL));
+	}
+}

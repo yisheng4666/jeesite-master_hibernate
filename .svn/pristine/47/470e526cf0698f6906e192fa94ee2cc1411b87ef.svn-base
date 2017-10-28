@@ -1,0 +1,114 @@
+package com.thinkgem.jeesite.activiti;
+
+import java.util.List;
+
+import org.activiti.engine.repository.ProcessDefinition;
+import org.activiti.engine.runtime.ProcessInstance;
+import org.activiti.engine.task.Task;
+import org.activiti.engine.test.Deployment;
+import org.activiti.spring.impl.test.SpringActivitiTestCase;
+import org.junit.Test;
+import org.springframework.test.context.ContextConfiguration;
+
+@ContextConfiguration("classpath:applicationContext-test-activiti.xml")
+public class AllTest extends SpringActivitiTestCase {
+
+//	@Test
+//	@Deployment(resources = "diagrams/all.bpmn")
+//	public void testDeployment() throws Exception {
+//		// 验证是否部署成功
+//		long count = repositoryService.createProcessDefinitionQuery().processDefinitionKey("all").count();
+//		assertEquals(1, count);
+//	}
+
+	@Test
+	@Deployment(resources = "diagrams/all.bpmn")
+	public void testAllApproved() throws Exception {
+		// 验证是否部署成功
+		long count = repositoryService.createProcessDefinitionQuery().processDefinitionKey("all").count();
+		assertEquals(1, count);
+
+		ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().processDefinitionKey("all").singleResult();
+
+		// 设置当前用户
+		String currentUserId = "szzb";
+		identityService.setAuthenticatedUserId(currentUserId);
+
+		// 启动流程
+		ProcessInstance processInstance = runtimeService.startProcessInstanceById(processDefinition.getId());
+		assertNotNull(processInstance);
+		
+		// 任务
+		Task task = taskService.createTaskQuery().taskAssignee("szzb").singleResult();
+        assertNotNull(task);
+        assertEquals("管理被考核单位", task.getName());
+        taskService.complete(task.getId());
+        
+        List<Task> taskList = taskService.createTaskQuery().taskAssignee("szzb").list();
+        assertNotNull(taskList);
+        assertEquals(2, taskList.size());
+        assertEquals("制定考评规则", taskList.get(0).getName());
+        assertEquals("确认审核用户", taskList.get(1).getName());
+        taskService.complete(taskList.get(0).getId());
+        taskService.complete(taskList.get(1).getId());
+             
+        task = taskService.createTaskQuery().taskAssignee("szzb").singleResult();
+        assertNotNull(task);
+        assertEquals("上报单位目录", task.getName());
+        taskService.complete(task.getId());
+        
+        task = taskService.createTaskQuery().taskAssignee("szzb").singleResult();
+        assertNotNull(task);
+        assertEquals("录入案事件", task.getName());
+        taskService.complete(task.getId());
+        
+        task = taskService.createTaskQuery().taskAssignee("szzb").singleResult();
+        assertNotNull(task);
+        assertEquals("等待评分", task.getName());
+        taskService.complete(task.getId());
+        
+        taskList = taskService.createTaskQuery().taskAssignee("szzb").list();
+        assertNotNull(taskList);
+        assertEquals(3, taskList.size());
+        assertEquals("评分单位评分", taskList.get(0).getName());
+        assertEquals("组长单位评分", taskList.get(1).getName());
+        assertEquals("加分处理", taskList.get(2).getName());
+        taskService.complete(taskList.get(0).getId());
+        taskService.complete(taskList.get(1).getId());
+        taskService.complete(taskList.get(2).getId());
+        
+        task = taskService.createTaskQuery().taskAssignee("szzb").singleResult();
+        assertNotNull(task);
+        assertEquals("通报评分单位评分情况", task.getName());
+        taskService.complete(task.getId());
+        
+        task = taskService.createTaskQuery().taskAssignee("szzb").singleResult();
+        assertNotNull(task);
+        assertEquals("处理异议", task.getName());
+        taskService.complete(task.getId());
+        
+        task = taskService.createTaskQuery().taskAssignee("szzb").singleResult();
+        assertNotNull(task);
+        assertEquals("下发认定结果", task.getName());
+        taskService.complete(task.getId());
+        
+        task = taskService.createTaskQuery().taskAssignee("szzb").singleResult();
+        assertNotNull(task);
+        assertEquals("反馈至组长单位", task.getName());
+        taskService.complete(task.getId());
+        
+        task = taskService.createTaskQuery().taskAssignee("szzb").singleResult();
+        assertNotNull(task);
+        assertEquals("确定排名", task.getName());
+        taskService.complete(task.getId());
+        
+        task = taskService.createTaskQuery().taskAssignee("szzb").singleResult();
+        assertNotNull(task);
+        assertEquals("分类评先", task.getName());
+        taskService.complete(task.getId());
+        
+        // 验证流程是否已经结束
+        ProcessInstance temp = runtimeService.createProcessInstanceQuery().processInstanceId(processInstance.getId()).singleResult();
+        assertNull(temp);
+	}
+}

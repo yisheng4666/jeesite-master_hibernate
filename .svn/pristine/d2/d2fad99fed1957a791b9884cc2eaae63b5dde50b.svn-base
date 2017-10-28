@@ -1,0 +1,84 @@
+/**
+ * There are <a href="https://github.com/thinkgem/jeesite">JeeSite</a> code generation
+ */
+package com.thinkgem.jeesite.modules.asmt.web;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.thinkgem.jeesite.common.config.Global;
+import com.thinkgem.jeesite.common.persistence.Page;
+import com.thinkgem.jeesite.common.utils.StringUtils;
+import com.thinkgem.jeesite.common.web.BaseController;
+import com.thinkgem.jeesite.modules.asmt.entity.Rule;
+import com.thinkgem.jeesite.modules.asmt.service.RuleService;
+
+/**
+ * 考评规则Controller
+ * @author Yyz
+ * @version 2017-08-25
+ */
+@Controller
+@RequestMapping(value = "${adminPath}/aprs/rule")
+public class RuleController extends BaseController {
+
+	@Autowired
+	private RuleService ruleService;
+	
+	@ModelAttribute
+	public Rule get(@RequestParam(required=false) String id) {
+		if (StringUtils.isNotBlank(id)){
+			return ruleService.get(id);
+		}else{
+			return new Rule();
+		}
+	}
+	
+	@RequiresPermissions("aprs:rule:view")
+	@RequestMapping(value = {"list", ""})
+	public String list(Rule rule, HttpServletRequest request, HttpServletResponse response, Model model) {
+//		User user = UserUtils.getUser();
+//		if (!user.isAdmin()){
+//			rule.setCreateBy(user);
+//		}
+        Page<Rule> page = ruleService.find(new Page<Rule>(request, response), rule); 
+        model.addAttribute("page", page);
+		return "modules/" + "aprs/ruleList";
+	}
+
+	@RequiresPermissions("aprs:rule:view")
+	@RequestMapping(value = "form")
+	public String form(Rule rule, Model model) {
+		model.addAttribute("rule", rule);
+		return "modules/" + "aprs/ruleForm";
+	}
+
+	@RequiresPermissions("aprs:rule:edit")
+	@RequestMapping(value = "save")
+	public String save(Rule rule, Model model, RedirectAttributes redirectAttributes) {
+		if (!beanValidator(model, rule)){
+			return form(rule, model);
+		}
+		ruleService.save(rule);
+//		addMessage(redirectAttributes, "保存考评规则'" + rule.getName() + "'成功");
+		return "redirect:"+Global.getAdminPath()+"/aprs/rule/?repage";
+	}
+	
+	@RequiresPermissions("aprs:rule:edit")
+	@RequestMapping(value = "delete")
+	public String delete(String id, RedirectAttributes redirectAttributes) {
+		ruleService.delete(id);
+		addMessage(redirectAttributes, "删除考评规则成功");
+		return "redirect:"+Global.getAdminPath()+"/aprs/rule/?repage";
+	}
+
+}

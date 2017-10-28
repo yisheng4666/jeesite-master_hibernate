@@ -1,0 +1,81 @@
+package com.thinkgem.jeesite.common.test;
+
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.subject.Subject;
+import org.apache.shiro.web.subject.WebSubject;
+import org.junit.Before;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.transaction.TransactionConfiguration;
+import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.filter.DelegatingFilterProxy;
+
+import com.thinkgem.jeesite.modules.sys.security.UsernamePasswordToken;
+
+/**
+ * SpringMVC Controller单元测试基类
+ * 
+ * @author wdb
+ * @version 2017-09-07
+ */
+@RunWith(SpringJUnit4ClassRunner.class)
+@ActiveProfiles("production")
+@ContextConfiguration(locations = { "/spring-context.xml", "/spring-context-shiro.xml", "/spring-mvc.xml",
+		"/spring-context-mybatis.xml", "/spring-context-activiti.xml" })
+@WebAppConfiguration
+@Transactional
+@TransactionConfiguration(transactionManager = "transactionManager", defaultRollback = true)
+public class BaseControllerTest {
+	@Autowired
+	private WebApplicationContext wac;
+
+	protected MockMvc mockMvc;
+
+	protected Subject suject;
+	@Autowired
+	SecurityManager securityManager;
+
+	protected MockHttpSession mockSession;
+
+	protected MockHttpServletRequest mockHttpServletRequest;
+	protected MockHttpServletResponse mockHttpServletResponse;
+
+	// @BeforeClass
+	// public static void beforeClass() {
+	// }
+
+	@Before
+	public void setup() {
+		mockMvc = MockMvcBuilders.webAppContextSetup(wac).addFilter(new DelegatingFilterProxy("shiroFilter", wac), "/*")
+				.build();
+		// mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+
+		mockHttpServletResponse = new MockHttpServletResponse();
+		mockHttpServletRequest = new MockHttpServletRequest(wac.getServletContext());
+		mockSession = new MockHttpSession(wac.getServletContext());
+		mockHttpServletRequest.setSession(mockSession);
+		SecurityUtils.setSecurityManager(securityManager);
+		// suject = new WebSubject.Builder(mockHttpServletRequest,
+		// mockHttpServletResponse).buildSubject();
+		suject = new WebSubject.Builder(mockHttpServletRequest, mockHttpServletResponse).buildWebSubject();
+
+		UsernamePasswordToken usernamePasswordToken = new UsernamePasswordToken("thinkgem", "admin".toCharArray(),
+				false, null, null);
+		usernamePasswordToken.setHost("127.0.0.1");
+		suject.login(usernamePasswordToken);
+	}
+
+	// @Test
+	// public void test() {}
+}

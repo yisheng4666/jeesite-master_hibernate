@@ -1,0 +1,783 @@
+package com.thinkgem.jeesite.modules.asmt.web;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.google.common.collect.Lists;
+import com.thinkgem.jeesite.common.beanvalidator.BeanValidators;
+import com.thinkgem.jeesite.common.config.Global;
+import com.thinkgem.jeesite.common.persistence.Page;
+import com.thinkgem.jeesite.common.utils.StringUtils;
+import com.thinkgem.jeesite.common.web.BaseController;
+import com.thinkgem.jeesite.modules.asmt.entity.Assement;
+import com.thinkgem.jeesite.modules.asmt.entity.AssementUser;
+import com.thinkgem.jeesite.modules.asmt.entity.AssementUserRule;
+import com.thinkgem.jeesite.modules.asmt.entity.AwardedMark;
+import com.thinkgem.jeesite.modules.asmt.entity.FlowStatusInfo;
+import com.thinkgem.jeesite.modules.asmt.service.AssementUserRuleService;
+import com.thinkgem.jeesite.modules.asmt.service.AssementUserService;
+import com.thinkgem.jeesite.modules.asmt.service.AwardedMarkService;
+import com.thinkgem.jeesite.modules.asmt.service.FlowStatusInfoService;
+import com.thinkgem.jeesite.modules.asmt.utils.AsmtUtils;
+import com.thinkgem.jeesite.modules.sys.entity.Office;
+import com.thinkgem.jeesite.modules.sys.entity.Role;
+import com.thinkgem.jeesite.modules.sys.entity.User;
+import com.thinkgem.jeesite.modules.sys.service.OfficeService;
+import com.thinkgem.jeesite.modules.sys.service.SystemService;
+
+/**
+ * 被考评用户Controller
+ * 
+ * @author JianHui
+ * @date 2017年9月6日--上午10:45:55
+ *
+ */
+
+@Controller
+@RequestMapping(value = "${adminPath}/asmt/assementUser")
+public class AssementUserController extends BaseController {
+
+	@Autowired
+	private AssementUserService assementUserService;
+	@Autowired
+	private SystemService systemService;
+	@Autowired
+	private OfficeService officeService;
+	@Autowired
+	private FlowStatusInfoService flowStatusInfoService;
+	@Autowired
+	private AssementUserRuleService assementUserRuleService;
+	@Autowired
+	private AwardedMarkService awardedMarkService;
+
+	@ModelAttribute
+	public AssementUser get(@RequestParam(required = false) String id) {
+		if (StringUtils.isNotBlank(id)) {
+			return assementUserService.get(id);
+		} else {
+			return new AssementUser();
+		}
+	}
+
+	@RequiresPermissions("asmt:assementUser:view")
+	@RequestMapping("assementUserMain")
+	public String assementUserMain() {
+		Assement assement = AsmtUtils.getCurrAssement();
+		if (assement == null) {
+			return "modules/asmt/noAssement";
+		} else {
+			return "modules/asmt/assementUserMain";
+		}
+	}
+
+	@RequiresPermissions("asmt:assementUser:view")
+	@RequestMapping("groupingMain")
+	public String groupingMain(String officeId, Model model) {
+		Assement assement = AsmtUtils.getCurrAssement();
+		if (assement == null) {
+			return "modules/asmt/noAssement";
+		} else {
+			model.addAttribute("officeId", officeId);
+			return "modules/asmt/groupingMain";
+		}
+	}
+
+	@RequiresPermissions("asmt:assement:view")
+	@RequestMapping(value = "form")
+	public String form(AssementUser assementUser, Model model) {
+		model.addAttribute("assementUser", assementUser);
+		return "modules/asmt/assementUserForm";
+	}
+
+	/**
+	 * 获取参加当前考评的单位用户
+	 * 
+	 * @author JianHui
+	 * @param assementUser
+	 * @param request
+	 * @param response
+	 * @param model
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:view")
+	@RequestMapping(value = { "list", "" })
+	public String list(AssementUser assementUser, HttpServletRequest request, HttpServletResponse response,
+			Model model) {
+		// 获取当前考评
+		Assement assement = AsmtUtils.getCurrAssement();
+		Page<AssementUser> page = new Page<AssementUser>();
+		if (assement != null) {
+			assementUser.setAssement(assement);
+			page = assementUserService.find(new Page<AssementUser>(request, response), assementUser);
+		}
+		model.addAttribute("page", page);
+		return "modules/asmt/assementUserLeft";
+	}
+
+	/**
+	 * 获取没有参加当前考评的单位用户
+	 * 
+	 * @author JianHui
+	 * @param request
+	 * @param response
+	 * @param model
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:view")
+	@RequestMapping(value = { "userList", "" })
+	public String userList(HttpServletRequest request, HttpServletResponse response, Model model) {
+		// 获取当前考评
+		Assement assement = AsmtUtils.getCurrAssement();
+		List<AssementUser> list = Lists.newArrayList();
+		Page<User> page = new Page<User>();
+		if (assement != null) {
+			list = assementUserService.find(assement.getId());
+			String[] ids = getUserIds(list);
+			page = systemService.findByAssmentUser(new Page<User>(request, response), ids);
+		}
+		model.addAttribute("page", page);
+		return "modules/asmt/assementUserRight";
+	}
+
+	/**
+	 * 获得当前考评的所有组
+	 * 
+	 * @author JianHui
+	 * @param assementUser
+	 * @param request
+	 * @param response
+	 * @param model
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:view")
+	@RequestMapping("groupingList")
+	public String groupingList(String officeId, AssementUser assementUser, HttpServletRequest request,
+			HttpServletResponse response, Model model, RedirectAttributes redirectAttributes) {
+		// 获得当前考评
+		Assement assement = AsmtUtils.getCurrAssement();
+		String officeName = null;
+		if (assementUser.getOffice() != null) {
+			officeName = assementUser.getOffice().getName();
+		}
+		Page<Office> page = officeService.findByAssement(new Page<Office>(request, response), assement, officeName);
+		List<Office> offices = page.getList();
+		for (Office office : offices) {
+			Integer num = assementUserService.getGroupMembersNum(office);
+			office.setNum(num);
+		}
+		page.setList(offices);
+		model.addAttribute("page", page);
+		model.addAttribute("officeId", officeId);
+		return "modules/asmt/groupingLeft";
+	}
+
+	/**
+	 * 获得当前考评中某一组的组内单位
+	 * 
+	 * @author JianHui
+	 * @param officeId
+	 *            组id
+	 * @param assementUser
+	 * @param request
+	 * @param response
+	 * @param model
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:view")
+	@RequestMapping("groupMembersList")
+	public String groupMembersList(String officeId, AssementUser assementUser, HttpServletRequest request,
+			HttpServletResponse response, Model model) {
+		// 获得当前考评
+		Assement assement = AsmtUtils.getCurrAssement();
+		String userName = null;
+		if (assementUser.getUserName() != null) {
+			userName = assementUser.getUserName();
+		}
+		Page<AssementUser> page = assementUserService.findByGroupMembers(new Page<AssementUser>(request, response),
+				assement, officeId, userName);
+		model.addAttribute("page", page);
+		model.addAttribute("officeId", officeId);
+		return "modules/asmt/groupingCenter";
+	}
+
+	/**
+	 * 获取当前考评未分组的单位用户
+	 * 
+	 * @author JianHui
+	 * @param assementUser
+	 * @param request
+	 * @param response
+	 * @param model
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:view")
+	@RequestMapping("notGroupMembersList")
+	public String notGroupMembersList(String officeId, AssementUser assementUser, HttpServletRequest request,
+			HttpServletResponse response, Model model) {
+		// 获得当前考评
+		Assement assement = AsmtUtils.getCurrAssement();
+		String userName = null;
+		if (assementUser.getUserName() != null) {
+			userName = assementUser.getUserName();
+		}
+		Page<AssementUser> page = assementUserService.findByNotGroupMembers(new Page<AssementUser>(request, response),
+				assement, officeId, userName);
+		model.addAttribute("page", page);
+		model.addAttribute("officeId", officeId);
+		return "modules/asmt/groupingRight";
+	}
+
+	/**
+	 * 移入考评组
+	 * 
+	 * @author JianHui
+	 * @param ids
+	 * @param model
+	 * @param redirectAttributes
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping(value = "joinOffice")
+	public String joinOffice(String officeId, String ids, Model model, RedirectAttributes redirectAttributes) {
+		// 用来记录消息
+		StringBuilder failureMsg = new StringBuilder();
+		boolean flg = true;
+		for (String id : ids.split(",")) {
+			// 获取考评单位
+			AssementUser assementUser = assementUserService.get(id);
+			// 获取考评组
+			Office office = officeService.get(officeId);
+			assementUser.setOffice(office);
+			assementUserService.save(assementUser);
+			if (flg) {
+				failureMsg.append("'" + assementUser.getUserName() + "' 单位加入《" + office.getName() + "》考评组成功  ");
+				flg = false;
+			} else {
+				failureMsg.append("<br/>'" + assementUser.getUserName() + "' 单位加入《" + office.getName() + "》考评组成功  ");
+			}
+		}
+		addMessage(redirectAttributes, failureMsg + "");
+		return "redirect:" + Global.getAdminPath() + "/asmt/assementUser/groupingMain?officeId=" + officeId;
+	}
+
+	/**
+	 * 移出考评组
+	 * 
+	 * @author JianHui
+	 * @param ids
+	 * @param model
+	 * @param redirectAttributes
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping(value = "removeOffice")
+	public String removeOffice(String officeId, String ids, Model model, RedirectAttributes redirectAttributes) {
+		// 用来记录消息
+		StringBuilder failureMsg = new StringBuilder();
+		boolean flg = true;
+		for (String id : ids.split(",")) {
+			AssementUser au = assementUserService.get(id);
+			if (flg) {
+				failureMsg.append("'" + au.getUserName() + "'单位移出《" + au.getOffice().getName() + "》考评组成功。");
+				flg = false;
+			} else {
+				failureMsg.append("<br/>'" + au.getUserName() + "'单位移出《" + au.getOffice().getName() + "》考评组成功。");
+			}
+			au.setOffice(null);
+			assementUserService.save(au);
+		}
+		addMessage(redirectAttributes, failureMsg + "");
+		return "redirect:" + Global.getAdminPath() + "/asmt/assementUser/groupingMain?officeId=" + officeId;
+	}
+
+	/**
+	 * 设置组长单位
+	 * 
+	 * @author JianHui
+	 * @param officeId
+	 *            组ID
+	 * @param id
+	 *            单位id
+	 * @param redirectAttributes
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping(value = "setGroupLeader")
+	public String setGroupLeader(String officeId, String id, Model model, RedirectAttributes redirectAttributes) {
+		// 获得当前考评
+		Assement assement = AsmtUtils.getCurrAssement();
+		AssementUser assementUser = assementUserService.findByAssementAndId(assement, id);
+		List<AssementUser> list = assementUserService.findGroupLeaderByAssement(assement, assementUser.getOffice());
+		// 获取组长角色
+		Role e = systemService.findRoleByName("组长单位");
+		for (AssementUser au : list) {
+			// 设置组长前先将已有的组长设置为否，删除组长角色
+			au.setIsGroupLeader("0");
+			au.getUser().getRoleList().remove(e);
+			assementUserService.save(au);
+			// 取消组长时删除流程状态信息
+			FlowStatusInfo fsi = flowStatusInfoService.findByType(au.getAssement(), au.getUser().getId(), "2");
+			if (fsi != null) {
+				flowStatusInfoService.delete(fsi.getId());
+			}
+		}
+		assementUser.setIsGroupLeader("1");
+		// 给被考评单位授予组长单位角色时先删除组长单位角色（不管有没有），防止查询重复角色
+		assementUser.getUser().getRoleList().remove(e);
+		assementUser.getUser().getRoleList().add(e);
+		assementUserService.save(assementUser);
+		// 添加流程状态信息
+		FlowStatusInfo fsi = new FlowStatusInfo();
+		fsi.setAssement(assement);
+		fsi.setFlowType("2");
+		fsi.setUser(assementUser.getUser());
+		fsi.setCompleteStatus("未开始");
+		flowStatusInfoService.save(fsi);
+		addMessage(redirectAttributes,
+				"《" + assementUser.getOffice().getName() + "》组设置组长单位成功。组长单位：" + assementUser.getUserName());
+		return "redirect:" + Global.getAdminPath() + "/asmt/assementUser/groupMembersList?officeId=" + officeId;
+	}
+
+	/**
+	 * 取消组长单位
+	 * 
+	 * @author JianHui
+	 * @param officeId
+	 *            组ID
+	 * @param id
+	 *            单位ID
+	 * @param model
+	 * @param redirectAttributes
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping(value = "cancelGroupLeader")
+	public String cancelGroupLeader(String officeId, String id, Model model, RedirectAttributes redirectAttributes) {
+		// 获得当前考评
+		Assement assement = AsmtUtils.getCurrAssement();
+		AssementUser assementUser = assementUserService.findByAssementAndId(assement, id);
+		assementUser.setIsGroupLeader("0");
+		// 获取组长角色
+		Role e = systemService.findRoleByName("组长单位");
+		assementUser.getUser().getRoleList().remove(e);
+		assementUserService.save(assementUser);
+		// 取消组长时删除流程状态信息
+		FlowStatusInfo fsi = flowStatusInfoService.findByType(assementUser.getAssement(),
+				assementUser.getUser().getId(), "2");
+		if (fsi != null) {
+			flowStatusInfoService.delete(fsi.getId());
+		}
+		addMessage(redirectAttributes, "取消组长单位成功");
+		return "redirect:" + Global.getAdminPath() + "/asmt/assementUser/groupMembersList?officeId=" + officeId;
+	}
+
+	/**
+	 * 检查分组有效性
+	 * 
+	 * @author JianHui
+	 * @param model
+	 * @param redirectAttributes
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping(value = "checkGroupingValidity")
+	public String checkGroupingValidity(String officeId, Model model, RedirectAttributes redirectAttributes) {
+		Assement assement = AsmtUtils.getCurrAssement();
+		// 用来记录消息
+		StringBuilder failureMsg = new StringBuilder();
+		boolean flg = true;
+		List<Office> offices = officeService.findByAssement(assement);
+		for (Office office : offices) {
+			Integer num = assementUserService.getGroupMembersNum(office);
+			if (num == 0) {
+				if (flg) {
+					failureMsg.append("《" + office.getName() + "》考评组没有组成员。");
+					flg = false;
+				} else {
+					failureMsg.append("<br/>《" + office.getName() + "》考评组没有组成员。");
+				}
+			}
+			List<AssementUser> users = assementUserService.findGroupLeaderByAssement(assement, office);
+			if (users.size() != 1) {
+				if (users.size() == 0) {
+					if (flg) {
+						failureMsg.append("《" + office.getName() + "》考评组没有组长单位。");
+						flg = false;
+					} else {
+						failureMsg.append("<br/>《" + office.getName() + "》考评组没有组长单位。");
+					}
+				} else {
+					if (flg) {
+						failureMsg.append("《" + office.getName() + "》考评组有多个组长单位。");
+						flg = false;
+					} else {
+						failureMsg.append("<br/>《" + office.getName() + "》考评组有多个组长单位。");
+					}
+				}
+			}
+		}
+		List<AssementUser> list = assementUserService.findByNotGroupMembers(assement);
+		if (list.size() > 0) {
+			if (flg) {
+				failureMsg.append("还有未分组的被考评单位。");
+				flg = false;
+			} else {
+				failureMsg.append("<br/>还有未分组的被考评单位。");
+			}
+		}
+		if (flg) {
+			failureMsg.append("分组有效。");
+		}
+		addMessage(redirectAttributes, failureMsg + "");
+		return "redirect:" + Global.getAdminPath() + "/asmt/assementUser/groupingMain?officeId=" + officeId;
+	}
+
+	/**
+	 * 检查登陆名是否存在
+	 * 
+	 * @author JianHui
+	 * @param oldLoginName
+	 * @param assementUser
+	 * @return
+	 */
+	@ResponseBody
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping("checkLoginName")
+	public String checkLoginName(String oldLoginName, AssementUser assementUser) {
+		String loginName = assementUser.getUser().getLoginName();
+		if (loginName != null && loginName.equals(oldLoginName)) {
+			return "true";
+		} else if (loginName != null && systemService.getUserByLoginName(loginName) == null) {
+			return "true";
+		}
+		return "false";
+	}
+
+	/**
+	 * 保存被考评单位
+	 * 
+	 * @author JianHui
+	 * @param assementUser
+	 * @param model
+	 * @param redirectAttributes
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping(value = "save")
+	public String save(AssementUser assementUser, Model model, RedirectAttributes redirectAttributes) {
+		if (!beanValidator(model, assementUser)) {
+			return form(assementUser, model);
+		}
+		try {
+			if ("".equals(assementUser.getId())) {
+				// 新增被考评数据时添加用户用户数据
+				User newUser = convertUser(assementUser);
+				systemService.saveUser(newUser);
+				// 获得当前考评
+				Assement assement = AsmtUtils.getCurrAssement();
+				assementUser.setUser(newUser);
+				assementUser.setAssement(assement);
+				assementUser.setIsGroupLeader("0");
+				assementUser.setIsSafe("0");
+			} else {
+				// 修改被考评单位名称时同步到用户
+				assementUser.getUser().setName(assementUser.getUserName());
+			}
+			assementUserService.save(assementUser);
+			// 添加流程状态信息
+			FlowStatusInfo fsi = new FlowStatusInfo();
+			fsi.setFlowType("0");
+			fsi.setUser(assementUser.getUser());
+			fsi.setCurrentStatus("未上报");
+			fsi.setCompleteStatus("未开始");
+			flowStatusInfoService.save(fsi);
+			addMessage(redirectAttributes, "保存被考评单位'" + assementUser.getUserName() + "'成功");
+		} catch (Exception e) {
+			addMessage(redirectAttributes, "保存被考评单位失败！失败信息：" + e.getMessage());
+		}
+		return "redirect:" + Global.getAdminPath() + "/asmt/assementUser/assementUserMain";
+	}
+
+	/**
+	 * 加入考评
+	 * 
+	 * @author JianHui
+	 * @param ids
+	 * @param model
+	 * @param redirectAttributes
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping(value = "joinAssement")
+	public String joinAssement(String ids, Model model, RedirectAttributes redirectAttributes) {
+		// 获得当前考评
+		Assement assement = AsmtUtils.getCurrAssement();
+		// 用来记录消息
+		StringBuilder failureMsg = new StringBuilder();
+		boolean flg = true;
+		for (String id : ids.split(",")) {
+			User user = systemService.getUser(id);
+			AssementUser assementUser = convertAssementUser(user);
+			// 加入当前考评
+			assementUser.setAssement(assement);
+			assementUserService.save(assementUser);
+			// 添加流程状态信息
+			FlowStatusInfo fsi = new FlowStatusInfo();
+			fsi.setAssement(assement);
+			fsi.setFlowType("0");
+			fsi.setUser(assementUser.getUser());
+			fsi.setCurrentStatus("未上报");
+			fsi.setCompleteStatus("未开始");
+			flowStatusInfoService.save(fsi);
+			if (flg) {
+				failureMsg.append("'" + assementUser.getUserName() + "' 单位加入当前考评成功  ");
+				flg = false;
+			} else {
+				failureMsg.append("<br/>'" + assementUser.getUserName() + "' 单位加入当前考评成功  ");
+			}
+		}
+		addMessage(redirectAttributes, failureMsg + "");
+		return "redirect:" + Global.getAdminPath() + "/asmt/assementUser/assementUserMain";
+	}
+
+	/**
+	 * 移出考评
+	 * 
+	 * @author JianHui
+	 * @param ids
+	 * @param model
+	 * @param redirectAttributes
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping(value = "removeAssement")
+	public String removeAssement(String ids, Model model, RedirectAttributes redirectAttributes) {
+		StringBuilder failureMsg = new StringBuilder();
+		boolean flg = true;
+		for (String id : ids.split(",")) {
+			AssementUser au = assementUserService.get(id);
+			if (au.getOffice() != null) {
+				if (flg) {
+					failureMsg.append("'" + au.getUserName() + "'单位已经分组，请先移出分组后在进行删除。");
+				} else {
+					failureMsg.append("<br/>'" + au.getUserName() + "'单位已经分组，请先移出分组后在进行删除。");
+				}
+			} else {
+				if (flg) {
+					failureMsg.append("'" + au.getUserName() + "'单位删除成功。");
+				} else {
+					failureMsg.append("<br/>'" + au.getUserName() + "'单位删除成功。");
+				}
+				// 移除考评时删除流程状态信息
+				FlowStatusInfo fsi = flowStatusInfoService.findByType(au.getAssement(), au.getUser().getId(), "0");
+				FlowStatusInfo fsi2 = flowStatusInfoService.findByType(au.getAssement(), au.getUser().getId(), "2");
+				if (fsi != null) {
+					flowStatusInfoService.delete(fsi.getId());
+				}
+				if (fsi2 != null) {
+					flowStatusInfoService.delete(fsi2.getId());
+				}
+				assementUserService.delete(id);
+			}
+		}
+		addMessage(redirectAttributes, failureMsg + "");
+		return "redirect:" + Global.getAdminPath() + "/asmt/assementUser/assementUserMain";
+	}
+
+	/**
+	 * 任务监督-目录上报
+	 * 
+	 * @author JianHui
+	 * @param assementUser
+	 * @param request
+	 * @param response
+	 * @param model
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping(value = "supervisionDirectoryReport")
+	public String supervisionDirectoryReport(AssementUser assementUser, HttpServletRequest request,
+			HttpServletResponse response, Model model) {
+		// 获得当前考评
+		Assement assement = AsmtUtils.getCurrAssement();
+		Page<AssementUser> page = assementUserService.query(new Page<AssementUser>(request, response), assementUser);
+		for (AssementUser au : page.getList()) {
+			FlowStatusInfo fsi = flowStatusInfoService.findByType(assement, au.getUser().getId(), "0");
+			if (fsi == null) {
+				au.setCurrentStatus("未上报");
+				au.setCompleteStatus("未开始");
+			} else {
+				au.setCurrentStatus(fsi.getCurrentStatus());
+				au.setCompleteStatus(fsi.getCompleteStatus());
+			}
+		}
+		model.addAttribute("page", page);
+		return "modules/asmt/supervisionDirectoryReport";
+	}
+
+	/**
+	 * 任务监督-组长单位评分
+	 * 
+	 * @author JianHui
+	 * @param assementUser
+	 * @param request
+	 * @param response
+	 * @param model
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping(value = "groupLeaderUnitScoring")
+	public String groupLeaderUnitScoring(AssementUser assementUser, HttpServletRequest request,
+			HttpServletResponse response, Model model) {
+		// 获得当前考评
+		Assement assement = AsmtUtils.getCurrAssement();
+		List<Office> offices = officeService.findByAssement(assement);
+		String[] ids = new String[offices.size()];
+		for (int i = 0; i < offices.size(); i++) {
+			ids[i] = offices.get(i).getId();
+		}
+		Page<AssementUser> page = assementUserService
+				.findGroupLeaderByAssement(new Page<AssementUser>(request, response), assementUser, ids);
+		for (AssementUser au : page.getList()) {
+			FlowStatusInfo fsi = flowStatusInfoService.findByType(assement, au.getUser().getId(), "2");
+			if (fsi == null) {
+				au.setCompleteStatus("未开始");
+			} else {
+				au.setCompleteStatus(fsi.getCompleteStatus());
+			}
+		}
+		model.addAttribute("page", page);
+		return "modules/asmt/groupLeaderUnitScoring";
+	}
+
+	/**
+	 * 任务监督-加分申请
+	 * 
+	 * @author JianHui
+	 * @param assementUser
+	 * @param request
+	 * @param response
+	 * @param model
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping(value = { "awardedMarkApplication" })
+	public String awardedMarkApplication(AssementUser assementUser, HttpServletRequest request,
+			HttpServletResponse response, Model model) {
+		// 获得当前考评
+		Assement assement = AsmtUtils.getCurrAssement();
+		List<AssementUser> auList = assementUserService.findByAssement(assement, assementUser);
+		String[] auIds = new String[auList.size()];
+		for (int i = 0; i < auList.size(); i++) {
+			auIds[i] = auList.get(i).getId();
+		}
+		List<AssementUserRule> aurList = assementUserRuleService.find(auIds);
+		String[] aurIds = new String[aurList.size()];
+		for (int i = 0; i < aurList.size(); i++) {
+			aurIds[i] = aurList.get(i).getId();
+		}
+		Page<AwardedMark> page = awardedMarkService.find(new Page<AwardedMark>(request, response), aurIds);
+		model.addAttribute("page", page);
+		return "modules/asmt/awardedMarkApplication";
+	}
+
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping(value = { "monitoringObjectionResponse" })
+	public String monitoringObjectionResponse(AssementUser assementUser, HttpServletRequest request,
+			HttpServletResponse response, Model model) {
+		// 获得当前考评
+		Assement assement = AsmtUtils.getCurrAssement();
+		List<AssementUser> auList = assementUserService.findByAssement(assement, assementUser);
+		String[] auIds = new String[auList.size()];
+		for (int i = 0; i < auList.size(); i++) {
+			auIds[i] = auList.get(i).getId();
+		}
+		List<AssementUserRule> aurList = assementUserRuleService.find(auIds);
+		String[] aurIds = new String[aurList.size()];
+		for (int i = 0; i < aurList.size(); i++) {
+			aurIds[i] = aurList.get(i).getId();
+		}
+		Page<AwardedMark> page = awardedMarkService.find(new Page<AwardedMark>(request, response), aurIds);
+		model.addAttribute("page", page);
+		return "modules/asmt/awardedMarkApplication";
+	}
+
+	/**
+	 * 将用户转换成被考评单位
+	 * 
+	 * @author JianHui
+	 * @param user
+	 *            用户
+	 * @return 被考评单位
+	 */
+	private AssementUser convertAssementUser(User user) {
+		AssementUser au = new AssementUser();
+		au.setUser(user);
+		au.setUserName(user.getName());
+		au.setOrganizationNo(user.getOrganizationNo());
+		// 默认为不是组长
+		au.setIsGroupLeader("0");
+		// 默认为不是平安单位
+		au.setIsSafe("0");
+		au.setAttribute(user.getAttribute());
+		au.setAppropriationType(user.getAppropriationType());
+		au.setSort(10);
+		return au;
+	}
+
+	/**
+	 * 将被考评单位转换成用户
+	 * 
+	 * @author JianHui
+	 * @param assementUser
+	 *            被考评单位
+	 * @return 用户
+	 */
+	private User convertUser(AssementUser assementUser) {
+		User user = new User();
+		user.setLoginName(assementUser.getUser().getLoginName());
+		user.setName(assementUser.getUserName());
+		user.setOrganizationNo(assementUser.getOrganizationNo());
+		user.setIsOrganization("1");
+		user.setAttribute(assementUser.getAttribute());
+		user.setAppropriationType(assementUser.getAppropriationType());
+		user.setPassword(SystemService.entryptPassword("123456"));
+		user.setRemarks(assementUser.getRemarks());
+		Role e = systemService.findRoleByName("被考评单位");
+		user.getRoleList().add(e);
+		BeanValidators.validateWithException(validator, user);
+		return user;
+	}
+
+	/**
+	 * 获取用户的id
+	 * 
+	 * @author JianHui
+	 * @param list
+	 * @return
+	 */
+	private String[] getUserIds(List<AssementUser> list) {
+		if (list.size() == 0) {
+			return null;
+		} else {
+			String[] ids = new String[list.size()];
+			for (int i = 0; i < ids.length; i++) {
+				ids[i] = list.get(i).getUser().getId();
+			}
+			return ids;
+		}
+	}
+
+}

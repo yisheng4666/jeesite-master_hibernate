@@ -1,0 +1,226 @@
+package com.thinkgem.jeesite.modules.asmt.web;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.google.common.collect.Lists;
+import com.thinkgem.jeesite.common.config.Global;
+import com.thinkgem.jeesite.common.utils.StringUtils;
+import com.thinkgem.jeesite.common.web.BaseController;
+import com.thinkgem.jeesite.modules.asmt.entity.Assement;
+import com.thinkgem.jeesite.modules.asmt.entity.AssementUser;
+import com.thinkgem.jeesite.modules.asmt.entity.AssementUserTree;
+import com.thinkgem.jeesite.modules.asmt.service.AssementService;
+import com.thinkgem.jeesite.modules.asmt.service.AssementUserservice;
+import com.thinkgem.jeesite.modules.sys.entity.Office;
+import com.thinkgem.jeesite.modules.sys.entity.User;
+import com.thinkgem.jeesite.modules.sys.service.SystemService;
+
+/**
+ * 被考评用户Controller
+ * 
+ * @author JianHui
+ * @date 2017年9月6日--上午10:45:55
+ *
+ */
+
+@Controller
+@RequestMapping(value = "${adminPath}/asmt/assementUser")
+public class AssementUserController extends BaseController {
+
+	@Autowired
+	private AssementUserservice assementUserservice;
+	@Autowired
+	private AssementService assementService;
+	@Autowired
+	private SystemService systemService;
+
+	@ModelAttribute
+	public AssementUser get(@RequestParam(required = false) String id) {
+		if (StringUtils.isNotBlank(id)) {
+			return assementUserservice.get(id);
+		} else {
+			return new AssementUser();
+		}
+	}
+
+	@RequiresPermissions("asmt:assementUser:view")
+	@RequestMapping(value = { "list", "" })
+	public String list(Assement assement, HttpServletRequest request, HttpServletResponse response, Model model) {
+		List<AssementUserTree> list = Lists.newArrayList();
+		List<AssementUserTree> list2 = Lists.newArrayList();
+		// 考评ID 9ed5c421ade3409682baca2783a0c873
+		String assementId = "9ed5c421ade3409682baca2783a0c873";
+		List<AssementUser> sourcelist = assementUserservice.findTree(assementId);
+		list2 = assembleList(list2, sourcelist);
+		AssementUserTree.sortList(list, list2, "1", true);
+		model.addAttribute("list", list);
+		return "modules/asmt/assementUserList";
+	}
+
+	/**
+	 * 组装被考评单位数组
+	 * 
+	 * @param list
+	 *            AssementUserTree 组装后的tree
+	 * @param sourcelist
+	 *            数据库查询的数据集
+	 * @return
+	 */
+	public List<AssementUserTree> assembleList(List<AssementUserTree> list, List<AssementUser> sourcelist) {
+		list = getOfficeConvertAssementUserTree(sourcelist);
+		for (int i = 0; i < sourcelist.size(); i++) {
+			AssementUser au = sourcelist.get(i);
+			AssementUserTree aut = copyProperties(au);
+			list.add(aut);
+		}
+		return list;
+	}
+
+	// 将AssementUser 转换成 AssementUserTree
+	public AssementUserTree copyProperties(AssementUser au) {
+		AssementUserTree aut = new AssementUserTree();
+		aut.setId(au.getId());
+		aut.setAssement(au.getAssement());
+		aut.setOffice(au.getOffice());
+		aut.setUser(au.getUser());
+		aut.setUserName(au.getUserName());
+		aut.setOrganizationNo(au.getOrganizationNo());
+		return aut;
+	}
+
+	// 获取被考评组，并且将被考评组转换成AssementUserTree
+	public List<AssementUserTree> getOfficeConvertAssementUserTree(List<AssementUser> sourcelist) {
+		List<AssementUserTree> list = new ArrayList<AssementUserTree>();
+		int no = 100;
+		for (int i = 0; i < sourcelist.size(); i++) {
+			AssementUser au = sourcelist.get(i);
+			if (au.getOffice() != null) {
+				Office office = au.getOffice();
+				boolean bool = isExist(list, office.getId());
+				if (!bool) {
+					AssementUserTree aut = new AssementUserTree();
+					Office o = new Office();
+					o.setId("1");
+					aut.setOffice(o);
+					aut.setId(office.getId());
+					aut.setAssement(au.getAssement());
+					aut.setUserName(office.getName());
+					aut.setOrganizationNo(no + "");
+					no += 100;
+					list.add(aut);
+				}
+			}
+		}
+		return list;
+	}
+
+	// 判断组是否存在
+	public static boolean isExist(List<AssementUserTree> list, String id) {
+		for (AssementUserTree aut : list) {
+			if (aut.getId().equals(id)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@RequiresPermissions("asmt:assementUser:view")
+	@RequestMapping(value = "form")
+	public String form(AssementUser assementUser, Model model) {
+		// 获取所有没分配考评组的用户
+		// List<User> userList = null;
+		// model.addAttribute("userList", userList);
+		model.addAttribute("assementUser", assementUser);
+		return "modules/asmt/assementUserForm";
+	}
+
+	/**
+	 * 导入被考评单位
+	 * 
+	 * @param id
+	 *            考评ID
+	 * @return
+	 */
+	@RequiresPermissions("asmt:assementUser:edit")
+	@RequestMapping(value = "importUser")
+	public String importUser(String id, RedirectAttributes redirectAttributes) {
+		// 当前考评ID
+		String assementId = "4ccfa1ce77cd4c7893054376a958c7bf";
+		Assement assement = assementService.get(assementId);
+		// 查询当前考评下的被考评用户，导入前先删除所有用户，防止重复导入
+		List<AssementUser> list = assementUserservice.findByAsseent(assementId);
+		for (AssementUser assementUser : list) {
+			assementUserservice.delete(assementUser.getId());
+		}
+		if (StringUtils.isNotBlank(id)) {
+			// 如果考评ID存在，导入该考评的被考评单位数据
+			List<AssementUser> users = assementUserservice.findByAsseent(id);
+			saveAssementUser(users, assement);
+		} else {
+			// 如果考评ID不存在，导入用户表中所有的考评组数据
+			List<User> users = systemService.findByOffice();
+			saveUserToAssementUser(users, assement);
+		}
+		addMessage(redirectAttributes, "导入被考评单位成功");
+		return "redirect:" + Global.getAdminPath() + "/asmt/assementUser/?repage";
+	}
+
+	/**
+	 * 保存考评平单位
+	 * 
+	 * @param users
+	 *            被考评单位集合
+	 * @param assement
+	 *            考评信息
+	 * @author JianHui
+	 */
+	private void saveAssementUser(List<AssementUser> users, Assement assement) {
+		for (AssementUser assementUser : users) {
+			AssementUser au = new AssementUser();
+			au.setAssement(assement);
+			au.setOffice(assementUser.getOffice());
+			au.setUser(assementUser.getUser());
+			au.setUserName(assementUser.getUserName());
+			au.setScore(0);
+			au.setOrganizationNo(assementUser.getOrganizationNo());
+			assementUserservice.save(au);
+		}
+
+	}
+
+	/**
+	 * 将用户保存为被考评单位
+	 * 
+	 * @param users
+	 *            用户集合
+	 * @param assement
+	 *            考评信息
+	 * @author JianHui
+	 */
+	private void saveUserToAssementUser(List<User> users, Assement assement) {
+		for (User user : users) {
+			AssementUser au = new AssementUser();
+			au.setAssement(assement);
+			au.setOffice(user.getOffice());
+			au.setUser(user);
+			au.setUserName(user.getName());
+			au.setScore(0);
+			au.setOrganizationNo(user.getOrganizationNo());
+			assementUserservice.save(au);
+		}
+	}
+
+}

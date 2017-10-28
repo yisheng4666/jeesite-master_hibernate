@@ -1,0 +1,183 @@
+package com.thinkgem.jeesite.modules.asmt.service;
+
+import java.util.List;
+
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.thinkgem.jeesite.common.persistence.Page;
+import com.thinkgem.jeesite.common.service.BaseService;
+import com.thinkgem.jeesite.common.utils.StringUtils;
+import com.thinkgem.jeesite.modules.asmt.dao.AssementUserDao;
+import com.thinkgem.jeesite.modules.asmt.entity.Assement;
+import com.thinkgem.jeesite.modules.asmt.entity.AssementUser;
+import com.thinkgem.jeesite.modules.sys.entity.Office;
+
+/**
+ * 被考评用户Service
+ * 
+ * @author JianHui
+ * @date 2017年9月6日--上午10:44:01
+ *
+ */
+
+@Component
+@Transactional(readOnly = true)
+public class AssementUserService extends BaseService {
+
+	@Autowired
+	private AssementUserDao assementUserDao;
+
+	public AssementUser get(String id) {
+		return assementUserDao.get(id);
+	}
+
+	public Page<AssementUser> find(Page<AssementUser> page, AssementUser assementUser) {
+		DetachedCriteria dc = assementUserDao.createDetachedCriteria();
+		if (StringUtils.isNotEmpty(assementUser.getAssement().getId())) {
+			dc.add(Restrictions.eq("assement.id", assementUser.getAssement().getId()));
+		}
+		dc.add(Restrictions.eq(Assement.FIELD_DEL_FLAG, Assement.DEL_FLAG_NORMAL));
+		dc.addOrder(Order.desc("id"));
+		return assementUserDao.find(page, dc);
+	}
+
+	public List<AssementUser> find(String id) {
+		DetachedCriteria dc = assementUserDao.createDetachedCriteria();
+		dc.add(Restrictions.eq("assement.id", id));
+		dc.add(Restrictions.eq(AssementUser.FIELD_DEL_FLAG, AssementUser.DEL_FLAG_NORMAL));
+		dc.addOrder(Order.asc("organizationNo"));
+		return assementUserDao.find(dc);
+	}
+
+	@Transactional(readOnly = false)
+	public void save(AssementUser assementUser) {
+		assementUserDao.save(assementUser);
+	}
+
+	@Transactional(readOnly = false)
+	public void delete(String id) {
+		assementUserDao.deleteById(id);
+	}
+
+	/**
+	 * 
+	 * 根据考评ID查询被考评单位
+	 * 
+	 * @author JianHui
+	 * @param id
+	 *            考评ID
+	 * @return
+	 */
+	public List<AssementUser> findByAssement(String id) {
+		List<AssementUser> list = assementUserDao.findByAssement(id);
+		return list;
+	}
+
+	/**
+	 * 获得组成员数量
+	 * 
+	 * @author JianHui
+	 * @param office
+	 *            组
+	 * @return
+	 */
+	public Integer getGroupMembersNum(Office office) {
+		Integer num = assementUserDao.getGroupMembersNum(office);
+		return num;
+	}
+
+	/**
+	 * 查询组内成员
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            当前考评
+	 * @param officeId
+	 *            组ID
+	 * @return
+	 */
+	public List<AssementUser> findByGroupMembers(Assement assement, String officeId) {
+		List<AssementUser> list = assementUserDao.findByGroupMembers(assement, officeId);
+		return list;
+	}
+
+	/**
+	 * 根据单位名称查询组内成员
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            当前考评
+	 * @param officeId
+	 *            组ID
+	 * @param userName
+	 *            单位名称
+	 * @return
+	 */
+	public List<AssementUser> findByGroupMembers(Assement assement, String officeId, String userName) {
+		List<AssementUser> list = assementUserDao.findByGroupMembers(assement, officeId, userName);
+		return list;
+	}
+
+	/**
+	 * 查询当前考评内没有分组的单位用户
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            当前考评
+	 * @return
+	 */
+	public List<AssementUser> findByNotGroupMembers(Assement assement) {
+		List<AssementUser> list = assementUserDao.findByNotGroupMembers(assement);
+		return list;
+	}
+
+	/**
+	 * 根据单位名称查询当前考评内没有分组的单位用户
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            当前考评
+	 * @param userName
+	 *            单位名称
+	 * @return
+	 */
+	public List<AssementUser> findByNotGroupMembers(Assement assement, String userName) {
+		List<AssementUser> list = assementUserDao.findByNotGroupMembers(assement, userName);
+		return list;
+	}
+
+	/**
+	 * 根据考评和考评单位ID查询考评单位
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            考评
+	 * @param id
+	 *            考评单位id
+	 * @return
+	 */
+	public AssementUser findByAssementAndId(Assement assement, String id) {
+		AssementUser assementUser = assementUserDao.findByAssementAndId(assement, id);
+		return assementUser;
+	}
+
+	/**
+	 * 查询考评组内的组长单位
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            考评
+	 * @param office
+	 *            考评组
+	 * @return
+	 */
+	public List<AssementUser> findGroupLeaderByAssement(Assement assement, Office office) {
+		List<AssementUser> list = assementUserDao.findGroupLeaderByAssement(assement, office);
+		return list;
+	}
+}

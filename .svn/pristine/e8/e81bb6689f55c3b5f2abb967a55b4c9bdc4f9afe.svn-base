@@ -1,0 +1,47 @@
+<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ include file="/WEB-INF/views/include/taglib.jsp"%>
+<html>
+<head>
+	<title>加分审核管理</title>
+	<meta name="decorator" content="default"/>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			
+		});
+		function page(n,s){
+			$("#pageNo").val(n);
+			$("#pageSize").val(s);
+			$("#searchForm").submit();
+        	return false;
+        }
+	</script>
+</head>
+<body>
+	<ul class="nav nav-tabs">
+		<li class="active"><a href="${ctx}/asmt/awardedMark/confirmAuditlist">审核列表</a></li>
+		<shiro:hasPermission name="asmt:awardedMark:view"><li><a href="">审核</a></li></shiro:hasPermission>
+	</ul>
+
+	<tags:message content="${message}"/>
+	<table id="contentTable" class="table table-striped table-bordered table-condensed">
+		<thead><tr><th>序号</th><th>申请单位</th><th>加分规则</th><th>申请原因</th><th>申请分值</th><th>组长意见</th><th>组长审核分值</th><shiro:hasPermission name="asmt:awardedMark:edit"><th>操作</th></shiro:hasPermission></tr></thead>
+		<tbody>
+		<c:forEach items="${page.list}" var="awardedMark" varStatus="status">
+			<tr>
+				<td>${status.index+1}</td>
+				<td>${awardedMark.assementUser.userName}</td>
+				<td>${awardedMark.rule.content}</td>
+				<td>${awardedMark.apply_reason}</td>
+				<td>${awardedMark.apply_score}</td>
+				<td>${awardedMark.group_suggest}</td>	
+				<td>${awardedMark.group_score}</td>								
+				<shiro:hasPermission name="asmt:awardedMark:edit"><td>
+    				<a href="${ctx}/asmt/awardedMark/confirmform?id=${awardedMark.id}">确认</a>
+				</td></shiro:hasPermission>
+			</tr>
+		</c:forEach>
+		</tbody>
+	</table>
+	
+</body>
+</html>

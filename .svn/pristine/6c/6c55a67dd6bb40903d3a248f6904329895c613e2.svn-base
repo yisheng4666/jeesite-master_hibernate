@@ -1,0 +1,29 @@
+/**
+ * There are <a href="https://github.com/thinkgem/jeesite">JeeSite</a> code generation
+ */
+package com.thinkgem.jeesite.modules.asmt.dao;
+
+import org.springframework.stereotype.Repository;
+
+import com.thinkgem.jeesite.common.persistence.BaseDao;
+import com.thinkgem.jeesite.modules.asmt.entity.Assement;
+
+/**
+ * 考评DAO接口
+ * 
+ * @author JianHui
+ * @date 2017年9月5日--下午3:05:30
+ *
+ */
+@Repository
+public class AssementDao extends BaseDao<Assement> {
+
+	/**
+	 * 查询创建时间最大的一条记录
+	 * 
+	 * @return 返回一个Assement考评记录
+	 */
+	public Assement getMaxByCreateDate() {
+		return getByHql("from Assement where createDate=(select max(createDate) from Assement)");
+	}
+}

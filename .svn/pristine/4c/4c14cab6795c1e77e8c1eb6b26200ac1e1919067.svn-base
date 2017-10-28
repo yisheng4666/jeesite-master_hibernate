@@ -1,0 +1,31 @@
+package com.thinkgem.jeesite.common.test;
+
+import javax.sql.DataSource;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
+import org.springframework.test.context.web.WebAppConfiguration;
+
+/**
+ * Spring 单元测试基类
+ * @author ThinkGem
+ * @version 2013-05-15
+ */
+@ActiveProfiles("production")
+//@ContextConfiguration(locations = {"/applicationContext.xml", "/applicationContext-shiro.xml"})
+//@ContextConfiguration(locations = {"/spring-context.xml", "/spring-context-shiro.xml"})
+@ContextConfiguration(locations = { "/spring-context.xml", "/spring-context-shiro.xml", "/spring-mvc.xml", "/spring-context-mybatis.xml", "/spring-context-activiti.xml" })
+@WebAppConfiguration
+public class SpringTransactionalContextTests extends AbstractTransactionalJUnit4SpringContextTests {
+
+	protected DataSource dataSource;
+
+	@Autowired
+	public void setDataSource(DataSource dataSource) {
+		super.setDataSource(dataSource);
+		this.dataSource = dataSource;
+	}
+	
+}

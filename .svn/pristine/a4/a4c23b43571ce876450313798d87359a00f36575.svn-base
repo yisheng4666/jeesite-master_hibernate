@@ -1,0 +1,239 @@
+/**
+ * Copyright &copy; 2012-2013 <a href="https://github.com/thinkgem/jeesite">JeeSite</a> All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ */
+package com.thinkgem.jeesite.modules.sys.web;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.apache.shiro.authz.annotation.RequiresUser;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.thinkgem.jeesite.common.config.Global;
+import com.thinkgem.jeesite.common.utils.StringUtils;
+import com.thinkgem.jeesite.common.web.BaseController;
+import com.thinkgem.jeesite.modules.asmt.entity.Assement;
+import com.thinkgem.jeesite.modules.asmt.entity.AssementUser;
+import com.thinkgem.jeesite.modules.asmt.service.AssementService;
+import com.thinkgem.jeesite.modules.asmt.service.AssementUserService;
+import com.thinkgem.jeesite.modules.asmt.utils.AsmtUtils;
+import com.thinkgem.jeesite.modules.sys.entity.Office;
+import com.thinkgem.jeesite.modules.sys.service.OfficeService;
+
+/**
+ * 机构Controller
+ * 
+ * @author ThinkGem
+ * @version 2013-5-15
+ */
+@Controller
+@RequestMapping(value = "${adminPath}/sys/office")
+public class OfficeController extends BaseController {
+
+	@Autowired
+	private OfficeService officeService;
+	@Autowired
+	private AssementService assementService;
+	@Autowired
+	private AssementUserService assementUserService;
+
+	@ModelAttribute("office")
+	public Office get(@RequestParam(required = false) String id) {
+		if (StringUtils.isNotBlank(id)) {
+			return officeService.get(id);
+		} else {
+			return new Office();
+		}
+	}
+
+	@RequiresPermissions("sys:office:view")
+	@RequestMapping({ "list", "" })
+	public String list(Office office, Model model) {
+		Assement assement = AsmtUtils.getCurrAssement();
+		if (assement == null) {
+			return "modules/asmt/noAssement";
+		} else {
+			office.setId("1");
+			model.addAttribute("office", office);
+			try {
+				List<Office> list = Lists.newArrayList();
+				List<Office> sourcelist = officeService.findByAssement(assement);
+				if (sourcelist.isEmpty()) {
+					Assement at = assementService.getMaxAssement();
+					List<Office> os = officeService.findByAssement(at);
+					// 如果os等于空，则表示当前为本系统第一次进行考评，无历史数据
+					if (!os.isEmpty()) {
+						sourcelist = copyAssements(os, assement);
+					}
+				}
+				Office.sortList(list, sourcelist, office.getId());
+				Collections.sort(list, new Comparator<Office>() {
+					@Override
+					public int compare(Office o1, Office o2) {
+						int i = o1.getSort() - o2.getSort();
+						return i;
+					}
+				});
+				model.addAttribute("list", list);
+			} catch (Exception e) {
+			}
+			// 获得当前考评
+			return "modules/sys/officeList";
+		}
+	}
+
+	/**
+	 * 将历史考评组复制一份到当前考评
+	 * 
+	 * @param os
+	 *            历史考评组
+	 * @param assement
+	 *            当前考评
+	 * @return
+	 */
+	private List<Office> copyAssements(List<Office> os, Assement assement) {
+		List<Office> list = Lists.newArrayList();
+		for (Office o : os) {
+			Office office = new Office();
+			office.setAssement(assement);
+			office.setName(o.getName());
+			office.setParent(o.getParent());
+			office.setParentIds(o.getParentIds());
+			office.setSort(o.getSort());
+			office.setGrade(o.getGrade());
+			officeService.save(office);
+			list.add(office);
+		}
+		return list;
+	}
+
+	@RequiresPermissions("sys:office:view")
+	@RequestMapping("form")
+	public String form(Office office, Model model) {
+		// commented by wdb
+		// User user = UserUtils.getUser();
+		if (office.getParent() == null || office.getParent().getId() == null) {
+			office.setParent(new Office("1"));
+		}
+		office.setParent(officeService.get(office.getParent().getId()));
+		model.addAttribute("office", office);
+		return "modules/sys/officeForm";
+	}
+
+	@RequiresPermissions("sys:office:edit")
+	@RequestMapping("save")
+	public String save(Office office, Model model, RedirectAttributes redirectAttributes) {
+		if (Global.isDemoMode()) {
+			addMessage(redirectAttributes, "演示模式，不允许操作！");
+			return "redirect:" + Global.getAdminPath() + "/sys/office/";
+		}
+
+		if (!beanValidator(model, office)) {
+			return form(office, model);
+		}
+		if ("".equals(office.getId())) {
+			// 获得当前考评
+			Assement assement = AsmtUtils.getCurrAssement();
+			// 获得当前考评下排序最大值
+			Integer maxSort = officeService.findMaxSortByAssement(assement);
+			office.setAssement(assement);
+			office.setSort((maxSort + 1));
+		}
+		officeService.save(office);
+		addMessage(redirectAttributes, "保存考评组'" + office.getName() + "'成功");
+		return "redirect:" + Global.getAdminPath() + "/sys/office/";
+	}
+
+	@RequiresPermissions("sys:office:edit")
+	@RequestMapping("delete")
+	public String delete(String id, RedirectAttributes redirectAttributes) {
+		if (Global.isDemoMode()) {
+			addMessage(redirectAttributes, "演示模式，不允许操作！");
+			return "redirect:" + Global.getAdminPath() + "/sys/office/";
+		}
+
+		if (Office.isRoot(id)) {
+			addMessage(redirectAttributes, "删除考评组失败, 不允许删除顶级考评组或编号空。");
+		} else {
+			Assement assement = AsmtUtils.getCurrAssement();
+			List<AssementUser> list = assementUserService.findByGroupMembers(assement, id);
+			if (list.size() > 0) {
+				addMessage(redirectAttributes, "请先移出当前组内的被考评单位后再进行删除。");
+			} else {
+				officeService.delete(id);
+				addMessage(redirectAttributes, "删除考评组成功。");
+			}
+		}
+		return "redirect:" + Global.getAdminPath() + "/sys/office/";
+	}
+
+	@RequiresUser
+	@ResponseBody
+	@RequestMapping("treeData")
+	public List<Map<String, Object>> treeData(HttpServletResponse response,
+			@RequestParam(required = false) String extId, @RequestParam(required = false) Long type,
+			@RequestParam(required = false) Long grade) {
+
+		response.setContentType("application/json; charset=UTF-8");
+		List<Map<String, Object>> mapList = Lists.newArrayList();
+
+		// User user = UserUtils.getUser();
+		List<Office> list = officeService.findAll();
+		for (int i = 0; i < list.size(); i++) {
+			Office e = list.get(i);
+
+			if ((extId == null
+					|| (extId != null && !extId.equals(e.getId()) && e.getParentIds().indexOf("," + extId + ",") == -1))
+					// commented by wdb && (type == null || (type != null &&
+					// Integer.parseInt(e.getType()) <= type.intValue()))
+					&& (grade == null || (grade != null && Integer.parseInt(e.getGrade()) <= grade.intValue()))) {
+
+				Map<String, Object> map = Maps.newHashMap();
+				map.put("id", e.getId());
+				// map.put("pId", !user.isAdmin() &&
+				// e.getId().equals(user.getOffice().getId())?0:e.getParent()!=null?e.getParent().getId():0);
+				map.put("pId", e.getParent() != null ? e.getParent().getId() : 0);
+				map.put("name", e.getName());
+				mapList.add(map);
+			}
+		}
+		return mapList;
+	}
+
+	/**
+	 * 批量修改组排序
+	 */
+	@RequiresPermissions("sys:office:edit")
+	@RequestMapping(value = "updateSort")
+	public String updateSort(String[] ids, Integer[] sorts, RedirectAttributes redirectAttributes) {
+		if (Global.isDemoMode()) {
+			addMessage(redirectAttributes, "演示模式，不允许操作！");
+			return "redirect:" + Global.getAdminPath() + "/sys/office/";
+		}
+		int len = ids.length;
+		Office[] offices = new Office[len];
+		for (int i = 0; i < len; i++) {
+			offices[i] = officeService.get(ids[i]);
+			offices[i].setSort(sorts[i]);
+			officeService.save(offices[i]);
+		}
+		addMessage(redirectAttributes, "保存考评组排序成功!");
+		return "redirect:" + Global.getAdminPath() + "/sys/office/";
+	}
+}

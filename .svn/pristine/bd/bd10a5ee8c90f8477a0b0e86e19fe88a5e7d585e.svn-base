@@ -1,0 +1,84 @@
+package com.thinkgem.jeesite.modules.asmt.dao;
+
+import java.util.List;
+
+import org.springframework.stereotype.Repository;
+
+import com.thinkgem.jeesite.common.persistence.BaseDao;
+import com.thinkgem.jeesite.common.persistence.Parameter;
+import com.thinkgem.jeesite.modules.asmt.entity.Assement;
+import com.thinkgem.jeesite.modules.asmt.entity.AssementUser;
+import com.thinkgem.jeesite.modules.sys.entity.Office;
+
+/**
+ * 被考评用户Dao接口
+ * 
+ * @author JianHui
+ * @date 2017年9月6日--上午10:42:11
+ *
+ */
+
+@Repository
+public class AssementUserDao extends BaseDao<AssementUser> {
+
+	/**
+	 * 根据考评ID查询被考评单位
+	 * 
+	 * @param id
+	 *            考评ID
+	 * @return
+	 * @author JianHui
+	 */
+	public List<AssementUser> findByAsseent(String id) {
+		return find("from AssementUser u where u.assement.id=:p1 and delFlag=:p2",
+				new Parameter(id, AssementUser.DEL_FLAG_NORMAL));
+	}
+
+	/**
+	 * 获得组成员数量
+	 * 
+	 * @author JianHui
+	 * @param office
+	 *            组
+	 * @return
+	 */
+	public Integer getGroupMembersNum(Office office) {
+		Integer result = Integer.parseInt(
+				uniqueResult("select count(*) from AssementUser u where u.office.id=:p1", new Parameter(office.getId()))
+						.toString());
+		return result;
+	}
+
+	/**
+	 * 查询组内成员
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            当前考评
+	 * @param officeId
+	 *            组ID
+	 * @return
+	 */
+	public List<AssementUser> findByGroupMembers(Assement assement, String officeId) {
+		return find("from AssementUser u where u.assement.id=:p1 and delFlag=:p2 and u.office.id=:p3",
+				new Parameter(assement.getId(), AssementUser.DEL_FLAG_NORMAL, officeId));
+	}
+
+	/**
+	 * 根据单位名称查询组内成员
+	 * 
+	 * @author JianHui
+	 * @param assement
+	 *            当前考评
+	 * @param officeId
+	 *            组ID
+	 * @param userName
+	 *            单位名称
+	 * @return
+	 */
+	public List<AssementUser> findByGroupMembers(Assement assement, String officeId, String userName) {
+		return find(
+				"from AssementUser u where u.assement.id = :p1 and delFlag = :p2 and u.office.id = :p3 and u.userName like :p4",
+				new Parameter(assement.getId(), AssementUser.DEL_FLAG_NORMAL, officeId, "%" + userName + "%"));
+	}
+}

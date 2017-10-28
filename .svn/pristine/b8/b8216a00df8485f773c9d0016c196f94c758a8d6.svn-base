@@ -1,0 +1,188 @@
+/**
+ * There are <a href="https://github.com/thinkgem/jeesite">JeeSite</a> code generation
+ */
+package com.thinkgem.jeesite.modules.asmt.entity;
+
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
+import javax.persistence.Table;
+
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+import org.hibernate.validator.constraints.Length;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.thinkgem.jeesite.common.persistence.IdEntity;
+
+/**
+ * 加分申请表
+ * 
+ * @author Lucy
+ * @version 2017-10-18
+ */
+@Entity
+@Table(name = "t_awarded_mark")
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+public class AwardedMark extends IdEntity<AwardedMark> {
+
+	private static final long serialVersionUID = 1L;
+	private AssementUser assementUser; // 被考评单位用户
+	private AssementUserRule assementUserRule; // 规则用户
+	private Rule rule;
+	private String apply_reason; // 申请原因
+	private Integer apply_score;// 申请分值
+	private String prove_url;// 证明材料URL
+	private String group_result;// 组长审核结果
+	private String group_suggest;// 组长审核意见
+	private Integer group_score;// 组长审核分值
+	private String confirm_result;// 确结果
+	private String confirm_suggest;// 确认意见
+	private Integer confirm_score;// 确认分值
+	private String current_status;// 当前状态
+	private String complete_status;// 完成状态
+
+	public AwardedMark() {
+		super();
+	}
+
+	public AwardedMark(String id) {
+		this();
+		this.id = id;
+	}
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "assement_user_id")
+	@NotFound(action = NotFoundAction.IGNORE)
+	@JsonIgnore
+	// @NotNull(message = "被考评用户不能为空")
+	// @ExcelField(title = "被考评用户", align = 2, sort = 25)
+	public AssementUser getAssementUser() {
+		return assementUser;
+	}
+
+	public void setAssementUser(AssementUser assementUser) {
+		this.assementUser = assementUser;
+	}
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "rule_id")
+	@NotFound(action = NotFoundAction.IGNORE)
+	@JsonIgnore
+	public Rule getRule() {
+		return rule;
+	}
+
+	public void setRule(Rule rule) {
+		this.rule = rule;
+	}
+
+	@Length(min = 1, max = 1000)
+	public String getApply_reason() {
+		return apply_reason;
+	}
+
+	public void setApply_reason(String apply_reason) {
+		this.apply_reason = apply_reason;
+	}
+
+	public Integer getApply_score() {
+		return apply_score;
+	}
+
+	public void setApply_score(Integer apply_score) {
+		this.apply_score = apply_score;
+	}
+
+	public String getProve_url() {
+		return prove_url;
+	}
+
+	public void setProve_url(String prove_url) {
+		this.prove_url = prove_url;
+	}
+
+	@Length(min = 1, max = 2)
+	public String getGroup_result() {
+		return group_result;
+	}
+
+	public void setGroup_result(String group_result) {
+		this.group_result = group_result;
+	}
+
+	public String getGroup_suggest() {
+		return group_suggest;
+	}
+
+	public void setGroup_suggest(String group_suggest) {
+		this.group_suggest = group_suggest;
+	}
+
+	public Integer getGroup_score() {
+		return group_score;
+	}
+
+	public void setGroup_score(Integer group_score) {
+		this.group_score = group_score;
+	}
+
+	@Length(min = 1, max = 2)
+	public String getConfirm_result() {
+		return confirm_result;
+	}
+
+	public void setConfirm_result(String confirm_result) {
+		this.confirm_result = confirm_result;
+	}
+
+	@Length(min = 1, max = 1000)
+	public String getConfirm_suggest() {
+		return confirm_suggest;
+	}
+
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "assement_user_rule_id")
+	@NotFound(action = NotFoundAction.IGNORE)
+	@JsonIgnore
+	public AssementUserRule getAssementUserRule() {
+		return assementUserRule;
+	}
+
+	public void setConfirm_suggest(String confirm_suggest) {
+		this.confirm_suggest = confirm_suggest;
+	}
+
+	public void setAssementUserRule(AssementUserRule assementUserRule) {
+		this.assementUserRule = assementUserRule;
+	}
+
+	public Integer getConfirm_score() {
+		return confirm_score;
+	}
+
+	public void setConfirm_score(Integer confirm_score) {
+		this.confirm_score = confirm_score;
+	}
+
+	public String getCurrent_status() {
+		return current_status;
+	}
+
+	public void setCurrent_status(String current_status) {
+		this.current_status = current_status;
+	}
+
+	public String getComplete_status() {
+		return complete_status;
+	}
+
+	public void setComplete_status(String complete_status) {
+		this.complete_status = complete_status;
+	}
+
+}

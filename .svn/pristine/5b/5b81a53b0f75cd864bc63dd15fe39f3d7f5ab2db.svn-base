@@ -1,0 +1,19 @@
+package com.thinkgem.jeesite.modules.asmt.dao;
+
+import org.springframework.stereotype.Repository;
+
+import com.thinkgem.jeesite.common.persistence.BaseDao;
+import com.thinkgem.jeesite.modules.asmt.entity.AssementUser;
+
+/**
+ * 被考评用户Dao接口
+ * 
+ * @author JianHui
+ * @date 2017年9月6日--上午10:42:11
+ *
+ */
+
+@Repository
+public class AssementUserDao extends BaseDao<AssementUser> {
+
+}

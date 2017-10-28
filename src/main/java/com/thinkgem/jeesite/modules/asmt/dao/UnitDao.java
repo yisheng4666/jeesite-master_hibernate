@@ -1,0 +1,16 @@
+package com.thinkgem.jeesite.modules.asmt.dao;
+
+import org.springframework.stereotype.Repository;
+
+import com.thinkgem.jeesite.common.persistence.BaseDao;
+import com.thinkgem.jeesite.modules.sys.entity.User;
+
+/**
+ * @author JianHui
+ * @date 2017年10月17日--上午10:30:24
+ */
+
+@Repository
+public class UnitDao extends BaseDao<User> {
+
+}

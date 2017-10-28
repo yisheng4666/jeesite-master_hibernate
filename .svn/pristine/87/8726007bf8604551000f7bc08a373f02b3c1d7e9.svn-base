@@ -1,0 +1,261 @@
+/**
+ * There are <a href="https://github.com/thinkgem/jeesite">JeeSite</a> code generation
+ */
+package com.thinkgem.jeesite.modules.asmt.entity;
+
+import java.util.List;
+
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+import javax.validation.constraints.NotNull;
+
+import org.apache.commons.lang3.StringUtils;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+import org.hibernate.annotations.ForeignKey;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+import org.hibernate.annotations.Where;
+import org.hibernate.validator.constraints.Length;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Lists;
+import com.thinkgem.jeesite.common.persistence.IdEntity;
+import com.thinkgem.jeesite.common.utils.excel.annotation.ExcelField;
+import com.thinkgem.jeesite.common.utils.excel.fieldtype.RoleListType;
+import com.thinkgem.jeesite.modules.sys.entity.Role;
+
+/**
+ * 考评规则Entity
+ * 
+ * @author Yyz
+ * @version 2017-08-25
+ */
+@Entity
+@Table(name = "t_rule")
+@DynamicInsert
+@DynamicUpdate
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+public class Rule extends IdEntity<Rule> {
+
+	private static final long serialVersionUID = 1L;
+	private Rule parent; // 父级规则
+	private String parentIds; // 所有父级编号
+	private Assement assement; // 考评
+	private String isScoreTime; // 是否是评分项目（1：评分项；0：非评分项）
+	private String type; // 类型（得分：0，扣分：1，加分：2）
+	private Integer scoreLimit; // 分值上限
+	private String content; // 内容
+	private Integer sort; 	// 排序
+	private String isIncident; // 是否关联案事件（不是：0，是：1）
+	private String incidentLevel; // 事件等级（一般：0，较大：1，重大：2，特大：3，省级：100，国级：200 ）
+
+	private List<Role> roleList = Lists.newArrayList(); // 拥有角色列表
+	private List<Rule> childList = Lists.newArrayList(); // 拥有子规则列表
+	
+	public Rule() {
+		super();
+		this.sort = 30;
+		this.isIncident = Rule.NO;
+	}
+
+	public Rule(String id) {
+		this();
+		this.id = id;
+	}
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "parent_id")
+	@ForeignKey(name="null")
+	@NotFound(action = NotFoundAction.IGNORE)
+	public Rule getParent() {
+		return parent;
+	}
+
+	public void setParent(Rule parent) {
+		this.parent = parent;
+	}
+
+	@Length(min = 1, max = 255)
+	public String getParentIds() {
+		return parentIds;
+	}
+
+	public void setParentIds(String parentIds) {
+		this.parentIds = parentIds;
+	}
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "assement_id")
+	@ForeignKey(name="null")
+	@NotFound(action = NotFoundAction.IGNORE)
+	@JsonIgnore
+	@NotNull(message = "考评不能为空")
+	@ExcelField(title = "考评", align = 2, sort = 25)
+	public Assement getAssement() {
+		return assement;
+	}
+
+	public void setAssement(Assement assement) {
+		this.assement = assement;
+	}
+
+	@Length(min = 1, max = 1)
+	public String getIsScoreTime() {
+		return isScoreTime;
+	}
+
+	public void setIsScoreTime(String isScoreTime) {
+		this.isScoreTime = isScoreTime;
+	}
+
+	@Length(min = 1, max = 10)
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public Integer getScoreLimit() {
+		return scoreLimit;
+	}
+
+	public void setScoreLimit(Integer scoreLimit) {
+		this.scoreLimit = scoreLimit;
+	}
+
+	@Length(min = 0, max = 1000)
+	public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
+		this.content = content;
+	}
+
+	@ManyToMany(fetch = FetchType.EAGER)
+	@JoinTable(name = "t_rule_role", joinColumns = { @JoinColumn(name = "rule_id") }, inverseJoinColumns = {
+			@JoinColumn(name = "role_id") })
+	@Where(clause = "del_flag='" + DEL_FLAG_NORMAL + "'")
+	@OrderBy("id")
+	@Fetch(FetchMode.SUBSELECT)
+	@NotFound(action = NotFoundAction.IGNORE)
+	@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+	@JsonIgnore
+	@ExcelField(title = "拥有角色", align = 1, sort = 800, fieldType = RoleListType.class)
+	public List<Role> getRoleList() {
+		return roleList;
+	}
+
+	public void setRoleList(List<Role> roleList) {
+		this.roleList = roleList;
+	}
+	
+	@Transient
+	@JsonIgnore
+	public List<String> getRoleIdList() {
+		List<String> roleIdList = Lists.newArrayList();
+		for (Role role : roleList) {
+			roleIdList.add(role.getId());
+		}
+		return roleIdList;
+	}
+
+	@Transient
+	public void setRoleIdList(List<String> roleIdList) {
+		roleList = Lists.newArrayList();
+		for (String roleId : roleIdList) {
+			Role role = new Role();
+			role.setId(roleId);
+			roleList.add(role);
+		}
+	}
+	
+	@Transient
+	@JsonIgnore
+	public List<String> getIncidentLevels() {
+		List<String> incidentLevels = Lists.newArrayList();
+		if (StringUtils.isNotEmpty(incidentLevel)) {
+			for (String incLvl : incidentLevel.split(",")) {
+				incidentLevels.add(incLvl);
+			}
+		}
+		return incidentLevels;
+	}
+	
+	@Transient
+	public void setIncidentLevels(List<String> incidentLevels) {
+		StringBuffer sb = new StringBuffer();
+		for (String incLvl : incidentLevels) {
+			if (sb.length() > 0)
+				sb.append(",");
+			sb.append(incLvl);
+		}
+		incidentLevel = sb.toString();
+ 	}
+
+	@OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
+	@Where(clause = "del_flag='" + DEL_FLAG_NORMAL + "'")
+	@OrderBy(value = "sort")
+	@Fetch(FetchMode.SUBSELECT)
+	@NotFound(action = NotFoundAction.IGNORE)
+	@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+	public List<Rule> getChildList() {
+		return childList;
+	}
+
+	public void setChildList(List<Rule> childList) {
+		this.childList = childList;
+	}
+	
+	@NotNull
+	public Integer getSort() {
+		return sort;
+	}
+	
+	public void setSort(Integer sort) {
+		this.sort = sort;
+	}
+
+	public String getIsIncident() {
+		return isIncident;
+	}
+
+	public void setIsIncident(String isIncident) {
+		this.isIncident = isIncident;
+	}
+
+	public String getIncidentLevel() {
+		return incidentLevel;
+	}
+
+	public void setIncidentLevel(String incidentLevel) {
+		this.incidentLevel = incidentLevel;
+	}
+	
+	public static final String TYPE_SCORE = "0"; // 得分
+	public static final String TYPE_SUBSCR = "1"; // 扣分
+	public static final String TYPE_ADDSCR = "2"; // 加分
+	
+	public static final String INCIDENTLEVEL_NORMAL = "0"; // 一般
+	public static final String INCIDENTLEVEL_LARGER = "1"; // 较大
+	public static final String INCIDENTLEVEL_XLARGER = "2"; // 重大
+	public static final String INCIDENTLEVEL_XXLARGER = "3"; // 特大
+	public static final String INCIDENTLEVEL_PROVINCIAL = "100"; // 省级
+	public static final String INCIDENTLEVEL_NATIONAL = "200"; // 国级
+	
+}

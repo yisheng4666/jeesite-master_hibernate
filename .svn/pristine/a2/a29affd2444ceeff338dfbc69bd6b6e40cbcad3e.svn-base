@@ -1,0 +1,104 @@
+/**
+ * There are <a href="https://github.com/thinkgem/jeesite">JeeSite</a> code generation
+ */
+package com.thinkgem.jeesite.modules.asmt.service;
+
+import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.thinkgem.jeesite.common.persistence.Page;
+import com.thinkgem.jeesite.common.service.BaseService;
+import com.thinkgem.jeesite.modules.asmt.dao.RuleDao;
+import com.thinkgem.jeesite.modules.asmt.dao.RuleUserDao;
+import com.thinkgem.jeesite.modules.asmt.entity.Rule;
+import com.thinkgem.jeesite.modules.asmt.entity.RuleUser;
+
+/**
+ * 考评规则Service
+ * @author Yyz
+ * @version 2017-08-25
+ */
+@Component
+@Transactional(readOnly = true)
+public class RuleService extends BaseService {
+
+	@Autowired
+	private RuleDao ruleDao;
+	
+	@Autowired
+	private RuleUserDao ruleUserDao;
+	
+	public Rule get(String id) {
+		return ruleDao.get(id);
+	}
+	
+	public Page<Rule> find(Page<Rule> page, Rule rule) {
+		DetachedCriteria dc = ruleDao.createDetachedCriteria();
+//		if (StringUtils.isNotEmpty(rule.getName())){
+//			dc.add(Restrictions.like("name", "%"+rule.getName()+"%"));
+//		}
+//		dc.add(Restrictions.eq(Rule.FIELD_DEL_FLAG, Rule.DEL_FLAG_NORMAL));
+		
+		if (null != rule.getAssement() && StringUtils.isNotEmpty(rule.getAssement().getId())) {
+			dc.add(Restrictions.eq("assement.id", rule.getAssement().getId()));
+			dc.addOrder(Order.asc("sort"));
+			return ruleDao.find(page, dc);
+		}
+		return page;	
+	}
+	
+	@Transactional(readOnly = false)
+	public void save(Rule rule) {
+		if (null == rule.getParent() || StringUtils.isEmpty(rule.getParent().getId())) {
+			Rule prule = new Rule();
+			prule.setId("0");
+			rule.setParent(prule);
+			rule.setParentIds("0,");
+			
+			ruleDao.save(rule);
+		} else {
+			rule.setParent(this.get(rule.getParent().getId()));
+			String oldParentIds = rule.getParentIds(); // 获取修改前的parentIds，用于更新子节点的parentIds
+			rule.setParentIds(rule.getParent().getParentIds() + rule.getParent().getId() + ",");
+			ruleDao.clear();
+			ruleDao.save(rule);
+			// 更新子节点 parentIds
+			List<Rule> list = ruleDao.findByParentIdsLike("%," + rule.getId() + ",%");
+			for (Rule r : list) {
+				r.setParentIds(r.getParentIds().replace(oldParentIds, rule.getParentIds()));
+			}
+			ruleDao.save(list);
+		}
+	}
+	
+	@Transactional(readOnly = false)
+	public void delete(String id) {
+		ruleDao.deleteById(id);
+	}
+
+	public List<Rule> findAllRule(String asmtId) {
+		return ruleDao.findByAssementId(asmtId);
+	}
+	
+	public List<RuleUser> findRuleUserByRule(String ruleId) {
+		return ruleUserDao.findByRuleId(ruleId);
+	}
+	
+	@Transactional(readOnly = false)
+	public void saveRuleUser(RuleUser ruleUser) {
+		ruleUserDao.save(ruleUser);
+	}
+	
+	@Transactional(readOnly = false)
+	public void deleteRuleUser(String id) {
+		ruleUserDao.deleteById(id);
+	}
+
+}

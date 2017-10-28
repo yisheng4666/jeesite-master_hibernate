@@ -1,0 +1,104 @@
+/**
+ * 
+ */
+package com.thinkgem.jeesite.modules.asmt.entity;
+
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.PrePersist;
+import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
+
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+import org.hibernate.validator.constraints.Length;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.thinkgem.jeesite.common.persistence.BaseEntity;
+import com.thinkgem.jeesite.common.utils.IdGen;
+import com.thinkgem.jeesite.modules.sys.entity.User;
+
+/**
+ * 考评规则的使用用户Entity
+ * 
+ * @author Yyz
+ * @version 2017-08-25
+ */
+@Entity
+@Table(name = "t_rule_user")
+@DynamicInsert
+@DynamicUpdate
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+public class RuleUser extends BaseEntity<RuleUser> {
+
+	private static final long serialVersionUID = 1L;
+	private String id; // 规则用户编号
+	private Rule rule; // 考评规则
+	private User user; // 考评用户
+	private String useType; // 使用类型（1：打分【默认】；2：修改打分）
+
+	public RuleUser() {
+		super();
+	}
+
+	public RuleUser(String id) {
+		this();
+		this.id = id;
+	}
+
+	@PrePersist
+	public void prePersist() {
+		this.id = IdGen.uuid();
+	}
+
+	@Id
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	@ManyToOne
+	@JoinColumn(name="rule_id")
+	@NotFound(action = NotFoundAction.IGNORE)
+	@JsonIgnore
+	@NotNull(message="规则不能为空")
+	public Rule getRule() {
+		return rule;
+	}
+
+	public void setRule(Rule rule) {
+		this.rule = rule;
+	}
+
+	@ManyToOne
+	@JoinColumn(name="user_id")
+	@NotFound(action = NotFoundAction.IGNORE)
+	@JsonIgnore
+	@NotNull(message="用户不能为空")
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	@Length(min=1, max=2)
+	@NotNull(message="使用类型不能为空")
+	public String getUseType() {
+		return useType;
+	}
+
+	public void setUseType(String useType) {
+		this.useType = useType;
+	}
+}

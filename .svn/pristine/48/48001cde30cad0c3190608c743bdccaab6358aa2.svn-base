@@ -1,0 +1,22 @@
+package com.thinkgem.jeesite.modules.asmt.web;
+
+import static org.junit.Assert.*;
+
+import org.junit.Test;
+
+/**
+ * 
+ * @author JianHui
+ * @date 2017年9月9日--下午3:06:17
+ *
+ */
+
+public class AssementUserControllerTest {
+
+	@Test
+	public void test() {
+		fail("Not yet implemented");
+	}
+
+}
+

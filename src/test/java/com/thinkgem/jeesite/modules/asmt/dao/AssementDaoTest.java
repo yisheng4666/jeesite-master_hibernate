@@ -1,0 +1,32 @@
+package com.thinkgem.jeesite.modules.asmt.dao;
+
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.thinkgem.jeesite.common.test.SpringTransactionalContextTests;
+import com.thinkgem.jeesite.modules.asmt.entity.Assement;
+
+/**
+ * 
+ * @author JianHui
+ * @date 2017年9月13日--上午9:56:13
+ *
+ */
+
+public class AssementDaoTest extends SpringTransactionalContextTests {
+
+	@Autowired
+	AssementDao assementDao;
+
+	@Test
+	public void testGetMaxAssement() {
+		Assement assement = assementDao.getMaxAssement();
+		// 判断查询出的数据ID是否和数据库中最大的数据ID一致
+		// 数据库最大的数据id，测试时需更改
+		String id = "4ccfa1ce77cd4c7893054376a958c7bf";
+		assertEquals(id, assement.getId());
+	}
+
+}

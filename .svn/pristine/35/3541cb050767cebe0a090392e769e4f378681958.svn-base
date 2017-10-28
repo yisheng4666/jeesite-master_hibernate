@@ -1,0 +1,27 @@
+/**
+ * There are <a href="https://github.com/thinkgem/jeesite">JeeSite</a> code generation
+ */
+package com.thinkgem.jeesite.modules.asmt.dao;
+
+import java.util.List;
+
+import org.springframework.stereotype.Repository;
+
+import com.thinkgem.jeesite.common.persistence.BaseDao;
+import com.thinkgem.jeesite.common.persistence.Parameter;
+import com.thinkgem.jeesite.modules.asmt.entity.Rule;
+import com.thinkgem.jeesite.modules.asmt.entity.UnitCatalog;
+
+/**
+ * 单位目录DAO接口
+ * @author lcy
+ * @version 2017-10-13
+ */
+@Repository
+public class UnitCatalogDao extends BaseDao<UnitCatalog> {
+
+  public List<UnitCatalog> findByassementUser(String asmUserId) {
+    return find("from UnitCatalog where assementUser.id=:p1 order by organization_no", new Parameter(asmUserId));
+  }
+  
+}

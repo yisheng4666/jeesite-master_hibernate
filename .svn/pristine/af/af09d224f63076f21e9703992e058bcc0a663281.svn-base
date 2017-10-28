@@ -1,0 +1,53 @@
+<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ include file="/WEB-INF/views/include/taglib.jsp"%>
+<html>
+<head>
+	<title>组管理</title>
+	<meta name="decorator" content="default"/>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			$("#name").focus();
+			$("#inputForm").validate();
+		});
+	</script>
+</head>
+<body>
+	<ul class="nav nav-tabs">
+		<li><a href="${ctx}/sys/office/">组列表</a></li>
+		<li class="active"><a href="${ctx}/sys/office/form?id=${office.id}&parent.id=${office.parent.id}">组<shiro:hasPermission name="sys:office:edit">${not empty office.id?'修改':'添加'}</shiro:hasPermission><shiro:lacksPermission name="sys:office:edit">查看</shiro:lacksPermission></a></li>
+	</ul><br/>
+	
+	<form:form id="inputForm" modelAttribute="office" action="${ctx}/sys/office/save" method="post" class="form-horizontal">
+		<form:hidden path="id"/>
+		<tags:message content="${message}"/>
+		
+		<div class="control-group">
+			<label class="control-label">上级组:</label>
+			<div class="controls">
+                <tags:treeselect id="office" name="parent.id" value="${office.parent.id}" labelName="parent.name" labelValue="${office.parent.name}"
+					title="组" url="/sys/office/treeData" extId="${office.id}" cssClass="required"/>
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label" for="name">组名称:</label>
+			<div class="controls">
+				<form:input path="name" htmlEscape="false" maxlength="50" class="required"/>
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label" for="grade">组级别:</label>
+			<div class="controls">
+				<form:select path="grade">
+					<form:options items="${fns:getDictList('sys_office_grade')}" itemLabel="label" itemValue="value" htmlEscape="false"/>
+				</form:select>
+			</div>
+		</div>
+		<div class="form-actions">
+			<shiro:hasPermission name="sys:office:edit">
+				<input id="btnSubmit" class="btn btn-primary" type="submit" value="保 存"/>&nbsp;
+			</shiro:hasPermission>
+			<input id="btnCancel" class="btn" type="button" value="返 回" onclick="history.go(-1)"/>
+		</div>
+	</form:form>
+</body>
+</html>

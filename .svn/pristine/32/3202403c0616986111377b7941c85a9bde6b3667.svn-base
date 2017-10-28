@@ -1,0 +1,51 @@
+<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ include file="/WEB-INF/views/include/taglib.jsp"%>
+<html>
+<head>
+	<title>被考评单位管理</title>
+	<meta name="decorator" content="default"/>
+	<script type="text/javascript">
+	</script>
+</head>
+<body>
+	<ul class="nav nav-tabs">
+		<li><a href="${ctx}/sys/user/">被考评单位列表</a></li>
+		<li class="active"><a href="${ctx}/sys/user/form?id=${assementUser.id}">被考评单位<shiro:hasPermission name="sys:user:edit">${not empty assementUser.id?'修改':'添加'}</shiro:hasPermission><shiro:lacksPermission name="sys:user:edit">查看</shiro:lacksPermission></a></li>
+	</ul><br/>
+	
+	<form:form id="inputForm" modelAttribute="user" action="${ctx}/sys/user/save" method="post" class="form-horizontal">
+		<form:hidden path="id"/>
+		<tags:message content="${message}"/>
+		<div class="control-group">
+			<label class="control-label" for="office">归属组:</label>
+			<div class="controls">
+                <tags:treeselect id="office" name="office.id" value="${assementUser.office.id}" labelName="office.name" labelValue="${assementUser.office.name}"
+					title="组" url="/sys/office/treeData?type=2" cssClass="required"/>
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label" for="office">被考评单位:</label>
+			<div class="controls">
+                <tags:treeselect id="user" name="user.id" value="${assementUser.user.id}" labelName="office.name" labelValue="${user.user.name}"
+					title="组" url="/sys/office/treeData?type=2" cssClass="required"/>
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label" for="oldLoginName">登录名:</label>
+			<div class="controls">
+				<form:input path="loginName" htmlEscape="false" maxlength="50" class="required userName"/>
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label" for="organizationNo">编制序列:</label>
+			<div class="controls">
+				<form:input path="organizationNo" htmlEscape="false" maxlength="50" class="required"/>
+			</div>
+		</div>
+		<div class="form-actions">
+			<shiro:hasPermission name="sys:user:edit"><input id="btnSubmit" class="btn btn-primary" type="submit" value="保 存"/>&nbsp;</shiro:hasPermission>
+			<input id="btnCancel" class="btn" type="button" value="返 回" onclick="history.go(-1)"/>
+		</div>
+	</form:form>
+</body>
+</html>

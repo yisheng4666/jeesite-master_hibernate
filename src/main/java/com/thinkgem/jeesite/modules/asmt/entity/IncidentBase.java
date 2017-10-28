@@ -1,0 +1,120 @@
+package com.thinkgem.jeesite.modules.asmt.entity;
+
+import java.util.Date;
+
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.validation.constraints.NotNull;
+
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.thinkgem.jeesite.common.persistence.IdEntity;
+import com.thinkgem.jeesite.modules.sys.entity.User;
+
+/**
+ * 
+ * @author JianHui
+ * @date 2017年10月26日--上午11:46:36
+ *
+ */
+
+@Entity
+@Table(name = "t_incident_base")
+@DynamicInsert
+@DynamicUpdate
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+public class IncidentBase extends IdEntity<IncidentBase> {
+
+	private User entryUser; // 录入用户
+	private IncidentType incidentType; // 事件类型
+	private AssementUserRule userRule; // 被考评用户规则
+	private UnitCatalog unitCatalog; // 单位
+	private String incidentNo; // 事件编码
+	private String content; // 事件内容
+	private Date time; // 事件发生时间
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "entry_user_id")
+	@NotFound(action = NotFoundAction.IGNORE)
+	@NotNull
+	public User getEntryUser() {
+		return entryUser;
+	}
+
+	public void setEntryUser(User entryUser) {
+		this.entryUser = entryUser;
+	}
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "incident_type_id")
+	@NotFound(action = NotFoundAction.IGNORE)
+	@NotNull
+	public IncidentType getIncidentType() {
+		return incidentType;
+	}
+
+	public void setIncidentType(IncidentType incidentType) {
+		this.incidentType = incidentType;
+	}
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "assement_user_rule_id")
+	@NotFound(action = NotFoundAction.IGNORE)
+	@NotNull
+	public AssementUserRule getUserRule() {
+		return userRule;
+	}
+
+	public void setUserRule(AssementUserRule userRule) {
+		this.userRule = userRule;
+	}
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "unit_catalog_id")
+	@NotFound(action = NotFoundAction.IGNORE)
+	@NotNull
+	public UnitCatalog getUnitCatalog() {
+		return unitCatalog;
+	}
+
+	public void setUnitCatalog(UnitCatalog unitCatalog) {
+		this.unitCatalog = unitCatalog;
+	}
+
+	public String getIncidentNo() {
+		return incidentNo;
+	}
+
+	public void setIncidentNo(String incidentNo) {
+		this.incidentNo = incidentNo;
+	}
+
+	public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
+		this.content = content;
+	}
+
+	@Temporal(TemporalType.TIMESTAMP)
+	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+	public Date getTime() {
+		return time;
+	}
+
+	public void setTime(Date time) {
+		this.time = time;
+	}
+}
