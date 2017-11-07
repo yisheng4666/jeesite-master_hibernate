@@ -1,0 +1,158 @@
+/**
+ * There are <a href="https://github.com/thinkgem/jeesite">JeeSite</a> code generation
+ */
+package com.thinkgem.jeesite.modules.asmt.entity;
+
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
+import javax.persistence.Table;
+
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+import org.hibernate.validator.constraints.Length;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.thinkgem.jeesite.common.persistence.IdEntity;
+
+/**
+ * 加分申请表
+ * 
+ * @author Lucy
+ * @version 2017-10-18
+ */
+@Entity
+@Table(name = "t_awarded_mark")
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+public class AwardedMark extends IdEntity<AwardedMark> {
+
+	private static final long serialVersionUID = 1L;
+	private AssementUserRule assementUserRule; // 规则用户
+	private String applyReason; // 申请原因
+	private Integer applyScore;// 申请分值
+	private String proveUrl;// 证明材料URL
+	private String groupResult;// 组长审核结果
+	private String groupSuggest;// 组长审核意见
+	private Integer groupScore;// 组长审核分值
+	private String confirmResult;// 确结果
+	private String confirmSuggest;// 确认意见
+	private Integer confirmScore;// 确认分值
+	private String currentStatus;// 当前状态
+	private String completeStatus;// 完成状态
+
+	public AwardedMark() {
+		super();
+	}
+
+	public AwardedMark(String id) {
+		this();
+		this.id = id;
+	}
+
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "assement_user_rule_id")
+	@NotFound(action = NotFoundAction.IGNORE)
+	@JsonIgnore
+	public AssementUserRule getAssementUserRule() {
+		return assementUserRule;
+	}
+
+	@Length(min=1,max=1000)
+  public String getApplyReason() {
+    return applyReason;
+  }
+
+  public void setApplyReason(String applyReason) {
+    this.applyReason = applyReason;
+  }
+
+  public Integer getApplyScore() {
+    return applyScore;
+  }
+
+  public void setApplyScore(Integer applyScore) {
+    this.applyScore = applyScore;
+  }
+
+  public String getProveUrl() {
+    return proveUrl;
+  }
+
+  public void setProveUrl(String proveUrl) {
+    this.proveUrl = proveUrl;
+  }
+
+  public String getGroupResult() {
+    return groupResult;
+  }
+
+  public void setGroupResult(String groupResult) {
+    this.groupResult = groupResult;
+  }
+
+  @Length(min=1,max=1000)
+  public String getGroupSuggest() {
+    return groupSuggest;
+  }
+
+  public void setGroupSuggest(String groupSuggest) {
+    this.groupSuggest = groupSuggest;
+  }
+
+  public Integer getGroupScore() {
+    return groupScore;
+  }
+
+  public void setGroupScore(Integer groupScore) {
+    this.groupScore = groupScore;
+  }
+
+  public String getConfirmResult() {
+    return confirmResult;
+  }
+
+  public void setConfirmResult(String confirmResult) {
+    this.confirmResult = confirmResult;
+  }
+
+  @Length(min=1,max=1000)
+  public String getConfirmSuggest() {
+    return confirmSuggest;
+  }
+
+  public void setConfirmSuggest(String confirmSuggest) {
+    this.confirmSuggest = confirmSuggest;
+  }
+
+  public Integer getConfirmScore() {
+    return confirmScore;
+  }
+
+  public void setConfirmScore(Integer confirmScore) {
+    this.confirmScore = confirmScore;
+  }
+
+  public String getCurrentStatus() {
+    return currentStatus;
+  }
+
+  public void setCurrentStatus(String currentStatus) {
+    this.currentStatus = currentStatus;
+  }
+
+  public String getCompleteStatus() {
+    return completeStatus;
+  }
+
+  public void setCompleteStatus(String completeStatus) {
+    this.completeStatus = completeStatus;
+  }
+
+  public void setAssementUserRule(AssementUserRule assementUserRule) {
+    this.assementUserRule = assementUserRule;
+  }
+
+}

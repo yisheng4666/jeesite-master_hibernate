@@ -1,0 +1,96 @@
+/**
+ * 
+ */
+package com.thinkgem.jeesite.modules.asmt.entity;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
+
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.thinkgem.jeesite.common.persistence.IdEntity;
+
+/**
+ * 被考评用户规则Entity
+ * 
+ * @author Yyz
+ * @version 2017-10-25
+ */
+@Entity
+@Table(name = "t_assement_user_rule")
+@DynamicInsert
+@DynamicUpdate
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+public class AssementUserRule extends IdEntity<AssementUserRule> {
+
+	private static final long serialVersionUID = 1L;
+	private AssementUser assementUser; // 被考评用户
+	private Rule rule; // 考评规则
+	private Double score; // 得分
+	private String isGroupAssement; // 是否组长评分规则（不是：0，是：1）
+	
+	public AssementUserRule() {
+		super();
+		this.score = 0.0;
+	}
+
+	public AssementUserRule(String id) {
+		this();
+		this.id = id;
+	}
+
+	@ManyToOne
+	@JoinColumn(name="assemented_user_id")
+	@NotFound(action = NotFoundAction.IGNORE)
+	@JsonIgnore
+	@NotNull(message="被考评用户不能为空")
+	public AssementUser getAssementUser() {
+		return assementUser;
+	}
+
+	public void setAssementUser(AssementUser assementUser) {
+		this.assementUser = assementUser;
+	}
+
+	@ManyToOne
+	@JoinColumn(name="rule_id")
+	@NotFound(action = NotFoundAction.IGNORE)
+	@JsonIgnore
+	@NotNull(message="规则不能为空")
+	public Rule getRule() {
+		return rule;
+	}
+
+	public void setRule(Rule rule) {
+		this.rule = rule;
+	}
+
+	@Column(columnDefinition="double(3,2) default '0.00'")
+	public Double getScore() {
+		return score;
+	}
+
+	public void setScore(Double score) {
+		this.score = score;
+	}
+
+	public String getIsGroupAssement() {
+		return isGroupAssement;
+	}
+
+	public void setIsGroupAssement(String isGroupAssement) {
+		this.isGroupAssement = isGroupAssement;
+	}
+
+
+}

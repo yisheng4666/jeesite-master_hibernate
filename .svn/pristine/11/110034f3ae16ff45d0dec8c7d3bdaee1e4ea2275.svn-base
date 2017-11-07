@@ -1,0 +1,193 @@
+/**
+ * There are <a href="https://github.com/thinkgem/jeesite">JeeSite</a> code generation
+ */
+package com.thinkgem.jeesite.modules.asmt.service;
+
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.google.common.collect.Lists;
+import com.thinkgem.jeesite.common.persistence.Page;
+import com.thinkgem.jeesite.common.service.BaseService;
+import com.thinkgem.jeesite.modules.asmt.dao.RuleDao;
+import com.thinkgem.jeesite.modules.asmt.dao.RuleUserDao;
+import com.thinkgem.jeesite.modules.asmt.entity.Assement;
+import com.thinkgem.jeesite.modules.asmt.entity.Rule;
+import com.thinkgem.jeesite.modules.asmt.entity.RuleUser;
+
+/**
+ * 考评规则Service
+ * 
+ * @author Yyz
+ * @version 2017-08-25
+ */
+@Component
+@Transactional(readOnly = true)
+public class RuleService extends BaseService {
+
+	@Autowired
+	private RuleDao ruleDao;
+
+	@Autowired
+	private RuleUserDao ruleUserDao;
+
+	public Rule get(String id) {
+		return ruleDao.get(id);
+	}
+
+	public Page<Rule> find(Page<Rule> page, Rule rule) {
+		DetachedCriteria dc = ruleDao.createDetachedCriteria();
+		// if (StringUtils.isNotEmpty(rule.getName())){
+		// dc.add(Restrictions.like("name", "%"+rule.getName()+"%"));
+		// }
+		// dc.add(Restrictions.eq(Rule.FIELD_DEL_FLAG, Rule.DEL_FLAG_NORMAL));
+
+		if (null != rule.getAssement() && StringUtils.isNotEmpty(rule.getAssement().getId())) {
+			dc.add(Restrictions.eq("assement.id", rule.getAssement().getId()));
+			dc.addOrder(Order.asc("sort"));
+			return ruleDao.find(page, dc);
+		}
+		return page;
+	}
+
+	/**
+	 * 获得顶级规则
+	 * 
+	 * @param rule
+	 * @return
+	 */
+	public List<Rule> findTopRules(Rule rule) {
+		DetachedCriteria dc = ruleDao.createDetachedCriteria();
+		if (null != rule.getAssement() && StringUtils.isNotEmpty(rule.getAssement().getId())) {
+			dc.add(Restrictions.eq("assement.id", rule.getAssement().getId()));
+			dc.add(Restrictions.eq("parentIds", "0,"));
+			dc.addOrder(Order.asc("sort"));
+			return ruleDao.find(dc);
+		}
+
+		return Lists.newArrayList();
+	}
+	
+	public List<Rule> findSonRules(Rule rule) {
+		DetachedCriteria dc = ruleDao.createDetachedCriteria();
+		if (null != rule.getAssement() && StringUtils.isNotEmpty(rule.getAssement().getId())) {
+			dc.add(Restrictions.eq("assement.id", rule.getAssement().getId()));
+			dc.add(Restrictions.eq("parent.id", rule.getId()));
+			dc.addOrder(Order.asc("sort"));
+			return ruleDao.find(dc);
+		}
+
+		return Lists.newArrayList();
+	}
+
+	@Transactional(readOnly = false)
+	public void save(Rule rule) {
+		if (null == rule.getSort()) {
+			rule.setSort(genMaxSort(rule.getAssement()));
+		}
+
+		if (null == rule.getParent() || StringUtils.isEmpty(rule.getParent().getId())) {
+			Rule prule = new Rule();
+			prule.setId("0");
+			rule.setParent(prule);
+			rule.setParentIds("0,");
+
+			ruleDao.save(rule);
+		} else {
+			rule.setParent(this.get(rule.getParent().getId()));
+			String oldParentIds = rule.getParentIds(); // 获取修改前的parentIds，用于更新子节点的parentIds
+			rule.setParentIds(rule.getParent().getParentIds() + rule.getParent().getId() + ",");
+
+			ruleDao.clear();
+			ruleDao.save(rule);
+			// 更新子节点 parentIds
+			List<Rule> list = ruleDao.findByParentIdsLike("%," + rule.getId() + ",%");
+			for (Rule r : list) {
+				r.setParentIds(r.getParentIds().replace(oldParentIds, rule.getParentIds()));
+			}
+			ruleDao.save(list);
+		}
+	}
+
+	/**
+	 * 调序
+	 * 
+	 * @param rule
+	 *            原规则
+	 * @param isUp
+	 *            向上调序：true，向下调序：false
+	 * @return 为null表示交换成功，否则返回失败信息
+	 */
+	public String exchange(Rule rule, boolean isUp) {
+		List<Rule> rules = Lists.newArrayList();
+		if (null == rule.getParent()) { // 无父级 或顶级规则
+			rules = findTopRules(rule);
+		} else {
+			rules = findSonRules(rule.getParent());
+		}
+		
+		int idx = rules.indexOf(rule);
+		if (idx == -1) {
+			return "无法进行调序";
+		}
+		
+		if (idx == 0 && isUp) {
+			return "当前规则已处于最前端，无法再向前调整";
+		} else if (idx == rules.size() - 1 && !isUp) {
+			return "当前规则已处于最后端，无法再向后调整";
+		}
+		
+		Rule exchg = isUp ? rules.get(idx - 1) : rules.get(idx + 1);
+		
+		if (null != exchg) {
+			int oldsort = rule.getSort();
+			int newsort = exchg.getSort();
+			
+			rule.setSort(newsort);
+			exchg.setSort(oldsort);
+			
+			ruleDao.clear();
+			
+			ruleDao.save(rule);
+			ruleDao.save(exchg);
+		} 
+		
+		return null;
+	}
+
+	@Transactional(readOnly = false)
+	public void delete(String id) {
+		ruleDao.deleteById(id);
+	}
+
+	public List<Rule> findAllRule(String asmtId) {
+		return ruleDao.findByAssementId(asmtId);
+	}
+
+	public List<RuleUser> findRuleUserByRule(String ruleId) {
+		return ruleUserDao.findByRuleId(ruleId);
+	}
+
+	@Transactional(readOnly = false)
+	public void saveRuleUser(RuleUser ruleUser) {
+		ruleUserDao.save(ruleUser);
+	}
+
+	@Transactional(readOnly = false)
+	public void deleteRuleUser(String id) {
+		ruleUserDao.deleteById(id);
+	}
+
+	private int genMaxSort(Assement assement) {
+		Integer max = ruleDao.findMaxSortByRule(assement);
+		return max + 1;
+	}
+
+}
